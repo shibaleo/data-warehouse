@@ -25,14 +25,25 @@ function togglFullHistoricalSync(): void {
 
 // --- Daily sync (all services) ---
 
-/** Daily sync: Toggl masters + time entries + Fitbit all + Tanita all */
+/** Daily sync: Toggl masters + time entries + Fitbit all + Tanita all + Zaim all */
 function dailySync(): void {
   log('=== Daily Sync Start ===');
   syncMasters();
   syncTimeEntries({ days: 3 });
   syncFitbitAll(7);
   syncTanitaAll(30);
+  syncZaimAll(30);
   log('=== Daily Sync Complete ===');
+}
+
+// --- Zaim ad-hoc ---
+
+/** Zaim full sync: all money records from 2020-01-01 + masters */
+function zaimFullSync(): void {
+  log('=== Zaim Full Sync Start ===');
+  syncZaimMasters();
+  syncZaimMoneyAll();
+  log('=== Zaim Full Sync Complete ===');
 }
 
 // --- Utilities ---
@@ -62,7 +73,7 @@ function installTriggers(): void {
     .everyHours(1)
     .create();
 
-  // Daily sync at 12:00 PM JST: Toggl + Fitbit + Tanita
+  // Daily sync at 12:00 PM JST: Toggl + Fitbit + Tanita + Zaim
   ScriptApp.newTrigger('dailySync')
     .timeBased()
     .everyDays(1)

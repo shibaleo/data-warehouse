@@ -1,0 +1,67 @@
+# Zaim Sources
+# =============================================================================
+# raw層テーブルの定義
+# =============================================================================
+
+version: 2
+
+sources:
+  - name: raw_zaim
+    description: "Zaim API raw responses"
+    schema: data_warehouse
+    tables:
+      - name: raw_zaim__money
+        description: "Zaim money records (income, payment, transfer)"
+        columns:
+          - name: id
+            description: "Primary key (UUID)"
+          - name: source_id
+            description: "Zaim money id"
+          - name: data
+            description: "Raw JSON response from Zaim /home/money API"
+          - name: synced_at
+            description: "Sync timestamp"
+          - name: api_version
+            description: "API version (v2)"
+
+      - name: raw_zaim__category
+        description: "Zaim user categories"
+        columns:
+          - name: id
+            description: "Primary key (UUID)"
+          - name: source_id
+            description: "Zaim category id"
+          - name: data
+            description: "Raw JSON response from Zaim /home/category API"
+          - name: synced_at
+            description: "Sync timestamp"
+          - name: api_version
+            description: "API version (v2)"
+
+      - name: raw_zaim__genre
+        description: "Zaim user genres (subcategories)"
+        columns:
+          - name: id
+            description: "Primary key (UUID)"
+          - name: source_id
+            description: "Zaim genre id"
+          - name: data
+            description: "Raw JSON response from Zaim /home/genre API"
+          - name: synced_at
+            description: "Sync timestamp"
+          - name: api_version
+            description: "API version (v2)"
+
+      - name: raw_zaim__account
+        description: "Zaim user accounts (wallet, bank, credit card)"
+        columns:
+          - name: id
+            description: "Primary key (UUID)"
+          - name: source_id
+            description: "Zaim account id"
+          - name: data
+            description: "Raw JSON response from Zaim /home/account API"
+          - name: synced_at
+            description: "Sync timestamp"
+          - name: api_version
+            description: "API version (v2)"

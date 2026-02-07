@@ -1,0 +1,190 @@
+# Zaim Models
+# =============================================================================
+# staging層モデルの定義
+# =============================================================================
+
+version: 2
+
+models:
+  - name: stg_zaim__money
+    description: "Zaim money records (income, payment, transfer transactions)"
+    columns:
+      - name: id
+        description: "Primary key (UUID)"
+        data_tests:
+          - unique
+          - not_null
+      - name: source_id
+        description: "Zaim money id"
+        data_tests:
+          - unique
+          - not_null
+      - name: zaim_id
+        description: "Original Zaim money id (bigint)"
+        data_tests:
+          - not_null
+      - name: user_id
+        description: "Zaim user id"
+      - name: mode
+        description: "Transaction type: income, payment, transfer"
+        data_tests:
+          - not_null
+          - accepted_values:
+              values: ['income', 'payment', 'transfer']
+      - name: transaction_date
+        description: "Transaction date"
+        data_tests:
+          - not_null
+      - name: created_at
+        description: "Record creation timestamp"
+      - name: amount
+        description: "Transaction amount (integer, no decimal)"
+        data_tests:
+          - not_null
+      - name: category_id
+        description: "Category id (for payment/income)"
+      - name: genre_id
+        description: "Genre id (for payment)"
+      - name: from_account_id
+        description: "Source account id (for payment/transfer)"
+      - name: to_account_id
+        description: "Destination account id (for income/transfer)"
+      - name: name
+        description: "Product/item name"
+      - name: place
+        description: "Place/store name"
+      - name: comment
+        description: "User comment"
+      - name: receipt_id
+        description: "Receipt id (for grouped items)"
+      - name: currency_code
+        description: "Currency code (default: JPY)"
+      - name: is_active
+        description: "Whether the record is active"
+      - name: synced_at
+        description: "Sync timestamp"
+        data_tests:
+          - not_null
+      - name: api_version
+        description: "API version"
+
+  - name: stg_zaim__category
+    description: "Zaim category master (payment and income categories)"
+    columns:
+      - name: id
+        description: "Primary key (UUID)"
+        data_tests:
+          - unique
+          - not_null
+      - name: source_id
+        description: "Zaim category id"
+        data_tests:
+          - unique
+          - not_null
+      - name: category_id
+        description: "Original Zaim category id (integer)"
+        data_tests:
+          - not_null
+      - name: name
+        description: "Category name"
+        data_tests:
+          - not_null
+      - name: mode
+        description: "Category type: payment or income"
+        data_tests:
+          - accepted_values:
+              values: ['payment', 'income']
+      - name: parent_category_id
+        description: "Parent category id (for custom categories)"
+      - name: sort_order
+        description: "Display sort order"
+      - name: is_active
+        description: "Whether the category is active"
+      - name: modified_at
+        description: "Last modified timestamp"
+      - name: synced_at
+        description: "Sync timestamp"
+        data_tests:
+          - not_null
+      - name: api_version
+        description: "API version"
+
+  - name: stg_zaim__genre
+    description: "Zaim genre master (subcategories within categories)"
+    columns:
+      - name: id
+        description: "Primary key (UUID)"
+        data_tests:
+          - unique
+          - not_null
+      - name: source_id
+        description: "Zaim genre id"
+        data_tests:
+          - unique
+          - not_null
+      - name: genre_id
+        description: "Original Zaim genre id (integer)"
+        data_tests:
+          - not_null
+      - name: name
+        description: "Genre name"
+        data_tests:
+          - not_null
+      - name: category_id
+        description: "Parent category id"
+        data_tests:
+          - not_null
+      - name: parent_genre_id
+        description: "Parent genre id (for custom genres)"
+      - name: sort_order
+        description: "Display sort order"
+      - name: is_active
+        description: "Whether the genre is active"
+      - name: modified_at
+        description: "Last modified timestamp"
+      - name: synced_at
+        description: "Sync timestamp"
+        data_tests:
+          - not_null
+      - name: api_version
+        description: "API version"
+
+  - name: stg_zaim__account
+    description: "Zaim account master (wallet, bank, credit card, etc.)"
+    columns:
+      - name: id
+        description: "Primary key (UUID)"
+        data_tests:
+          - unique
+          - not_null
+      - name: source_id
+        description: "Zaim account id"
+        data_tests:
+          - unique
+          - not_null
+      - name: account_id
+        description: "Original Zaim account id (integer)"
+        data_tests:
+          - not_null
+      - name: name
+        description: "Account name"
+        data_tests:
+          - not_null
+      - name: parent_account_id
+        description: "Parent account id (for grouped accounts)"
+      - name: local_id
+        description: "Local id"
+      - name: website_id
+        description: "Linked website id"
+      - name: sort_order
+        description: "Display sort order"
+      - name: is_active
+        description: "Whether the account is active"
+      - name: modified_at
+        description: "Last modified timestamp"
+      - name: synced_at
+        description: "Sync timestamp"
+        data_tests:
+          - not_null
+      - name: api_version
+        description: "API version"
