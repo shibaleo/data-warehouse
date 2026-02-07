@@ -1,0 +1,263 @@
+# Fitbit Models
+# =============================================================================
+# staging層モデルの定義
+# =============================================================================
+
+version: 2
+
+models:
+  - name: stg_fitbit__sleep
+    description: "Fitbit sleep log data with stages summary"
+    columns:
+      - name: id
+        description: "Primary key (UUID)"
+        data_tests:
+          - unique
+          - not_null
+      - name: source_id
+        description: "Fitbit sleep log ID"
+        data_tests:
+          - unique
+          - not_null
+      - name: date
+        description: "Sleep date (date of wakeup)"
+        data_tests:
+          - not_null
+      - name: start_time
+        description: "Sleep start time (UTC)"
+      - name: end_time
+        description: "Sleep end time (UTC)"
+      - name: duration_minutes
+        description: "Total sleep duration in minutes"
+      - name: efficiency
+        description: "Sleep efficiency score (0-100)"
+      - name: is_main_sleep
+        description: "Whether this is the main sleep period"
+      - name: deep_minutes
+        description: "Time in deep sleep stage (minutes)"
+      - name: light_minutes
+        description: "Time in light sleep stage (minutes)"
+      - name: rem_minutes
+        description: "Time in REM sleep stage (minutes)"
+      - name: wake_minutes
+        description: "Time awake during sleep (minutes)"
+      - name: synced_at
+        description: "Sync timestamp"
+        data_tests:
+          - not_null
+      - name: api_version
+        description: "API version"
+
+  - name: stg_fitbit__activity
+    description: "Fitbit daily activity summary"
+    columns:
+      - name: id
+        description: "Primary key (UUID)"
+        data_tests:
+          - unique
+          - not_null
+      - name: source_id
+        description: "Activity date (YYYY-MM-DD)"
+        data_tests:
+          - unique
+          - not_null
+      - name: date
+        description: "Activity date"
+        data_tests:
+          - not_null
+      - name: steps
+        description: "Total steps"
+      - name: distance_km
+        description: "Total distance in kilometers"
+      - name: floors
+        description: "Floors climbed"
+      - name: calories_total
+        description: "Total calories burned"
+      - name: calories_bmr
+        description: "Basal metabolic rate calories"
+      - name: calories_activity
+        description: "Calories burned from activity"
+      - name: sedentary_minutes
+        description: "Sedentary minutes"
+      - name: lightly_active_minutes
+        description: "Lightly active minutes"
+      - name: fairly_active_minutes
+        description: "Fairly active minutes"
+      - name: very_active_minutes
+        description: "Very active minutes"
+      - name: total_active_minutes
+        description: "Total active minutes (lightly + fairly + very)"
+      - name: synced_at
+        description: "Sync timestamp"
+        data_tests:
+          - not_null
+      - name: api_version
+        description: "API version"
+
+  - name: stg_fitbit__heart_rate
+    description: "Fitbit daily resting heart rate"
+    columns:
+      - name: id
+        description: "Primary key (UUID)"
+        data_tests:
+          - unique
+          - not_null
+      - name: source_id
+        description: "Date (YYYY-MM-DD)"
+        data_tests:
+          - unique
+          - not_null
+      - name: date
+        description: "Measurement date"
+        data_tests:
+          - not_null
+      - name: resting_heart_rate
+        description: "Resting heart rate in bpm"
+      - name: synced_at
+        description: "Sync timestamp"
+        data_tests:
+          - not_null
+      - name: api_version
+        description: "API version"
+
+  - name: stg_fitbit__hrv
+    description: "Fitbit heart rate variability (RMSSD)"
+    columns:
+      - name: id
+        description: "Primary key (UUID)"
+        data_tests:
+          - unique
+          - not_null
+      - name: source_id
+        description: "Date (YYYY-MM-DD)"
+        data_tests:
+          - unique
+          - not_null
+      - name: date
+        description: "Measurement date"
+        data_tests:
+          - not_null
+      - name: daily_rmssd
+        description: "Daily RMSSD value (ms)"
+      - name: deep_rmssd
+        description: "Deep sleep RMSSD value (ms)"
+      - name: synced_at
+        description: "Sync timestamp"
+        data_tests:
+          - not_null
+      - name: api_version
+        description: "API version"
+
+  - name: stg_fitbit__spo2
+    description: "Fitbit blood oxygen saturation"
+    columns:
+      - name: id
+        description: "Primary key (UUID)"
+        data_tests:
+          - unique
+          - not_null
+      - name: source_id
+        description: "Date (YYYY-MM-DD)"
+        data_tests:
+          - unique
+          - not_null
+      - name: date
+        description: "Measurement date"
+        data_tests:
+          - not_null
+      - name: avg_spo2
+        description: "Average SpO2 percentage"
+      - name: min_spo2
+        description: "Minimum SpO2 percentage"
+      - name: max_spo2
+        description: "Maximum SpO2 percentage"
+      - name: synced_at
+        description: "Sync timestamp"
+        data_tests:
+          - not_null
+      - name: api_version
+        description: "API version"
+
+  - name: stg_fitbit__breathing_rate
+    description: "Fitbit breathing rate during sleep"
+    columns:
+      - name: id
+        description: "Primary key (UUID)"
+        data_tests:
+          - unique
+          - not_null
+      - name: source_id
+        description: "Date (YYYY-MM-DD)"
+        data_tests:
+          - unique
+          - not_null
+      - name: date
+        description: "Measurement date"
+        data_tests:
+          - not_null
+      - name: breathing_rate
+        description: "Breathing rate (breaths per minute)"
+      - name: synced_at
+        description: "Sync timestamp"
+        data_tests:
+          - not_null
+      - name: api_version
+        description: "API version"
+
+  - name: stg_fitbit__cardio_score
+    description: "Fitbit cardio fitness score (VO2 Max estimate)"
+    columns:
+      - name: id
+        description: "Primary key (UUID)"
+        data_tests:
+          - unique
+          - not_null
+      - name: source_id
+        description: "Date (YYYY-MM-DD)"
+        data_tests:
+          - unique
+          - not_null
+      - name: date
+        description: "Measurement date"
+        data_tests:
+          - not_null
+      - name: vo2_max
+        description: "Estimated VO2 Max value"
+      - name: vo2_max_range_low
+        description: "VO2 Max range lower bound"
+      - name: vo2_max_range_high
+        description: "VO2 Max range upper bound"
+      - name: synced_at
+        description: "Sync timestamp"
+        data_tests:
+          - not_null
+      - name: api_version
+        description: "API version"
+
+  - name: stg_fitbit__temperature_skin
+    description: "Fitbit skin temperature variation"
+    columns:
+      - name: id
+        description: "Primary key (UUID)"
+        data_tests:
+          - unique
+          - not_null
+      - name: source_id
+        description: "Date (YYYY-MM-DD)"
+        data_tests:
+          - unique
+          - not_null
+      - name: date
+        description: "Measurement date"
+        data_tests:
+          - not_null
+      - name: nightly_relative
+        description: "Nightly temperature relative to baseline (C)"
+      - name: log_type
+        description: "Log type identifier"
+      - name: synced_at
+        description: "Sync timestamp"
+        data_tests:
+          - not_null
+      - name: api_version
+        description: "API version"
