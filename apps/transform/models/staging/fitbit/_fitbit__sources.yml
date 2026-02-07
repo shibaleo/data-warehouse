@@ -1,0 +1,23 @@
+version: 2
+
+sources:
+  - name: raw_fitbit
+    description: "Fitbit raw API responses"
+    schema: data_warehouse
+    tables:
+      - name: raw_fitbit__sleep
+        description: "Fitbit Sleep API v1.2 (sleep logs)"
+      - name: raw_fitbit__activity
+        description: "Fitbit Activity Daily Summary API v1"
+      - name: raw_fitbit__heart_rate
+        description: "Fitbit Heart Rate API v1"
+      - name: raw_fitbit__hrv
+        description: "Fitbit HRV API v1"
+      - name: raw_fitbit__spo2
+        description: "Fitbit SpO2 API v1"
+      - name: raw_fitbit__breathing_rate
+        description: "Fitbit Breathing Rate API v1"
+      - name: raw_fitbit__cardio_score
+        description: "Fitbit Cardio Score (VO2 Max) API v1"
+      - name: raw_fitbit__temperature_skin
+        description: "Fitbit Temperature Skin API v1"

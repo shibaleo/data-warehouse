@@ -1,26 +1,40 @@
 // GAS entry points (trigger functions)
 
-/** Daily sync: masters + recent time entries */
+// --- Toggl Track ---
+
+/** Toggl hourly sync: recent time entries only */
+function togglHourlySync(): void {
+  log('=== Toggl Hourly Sync Start ===');
+  syncTimeEntries({ days: 1 });
+  log('=== Toggl Hourly Sync Complete ===');
+}
+
+/** Toggl weekly historical sync: last 30 days of report data */
+function togglWeeklyHistoricalSync(): void {
+  log('=== Toggl Weekly Historical Sync Start ===');
+  syncTimeEntriesReport({ days: 30 });
+  log('=== Toggl Weekly Historical Sync Complete ===');
+}
+
+/** Toggl full historical sync: last 365 days of report data */
+function togglFullHistoricalSync(): void {
+  log('=== Toggl Full Historical Sync Start ===');
+  syncTimeEntriesReport({ days: 365 });
+  log('=== Toggl Full Historical Sync Complete ===');
+}
+
+// --- Daily sync (all services) ---
+
+/** Daily sync: Toggl masters + time entries + Fitbit all */
 function dailySync(): void {
   log('=== Daily Sync Start ===');
   syncMasters();
   syncTimeEntries({ days: 3 });
+  syncFitbitAll(7);
   log('=== Daily Sync Complete ===');
 }
 
-/** Weekly historical sync: last 30 days of report data */
-function weeklyHistoricalSync(): void {
-  log('=== Weekly Historical Sync Start ===');
-  syncTimeEntriesReport({ days: 30 });
-  log('=== Weekly Historical Sync Complete ===');
-}
-
-/** Full historical sync: last 365 days of report data */
-function fullHistoricalSync(): void {
-  log('=== Full Historical Sync Start ===');
-  syncTimeEntriesReport({ days: 365 });
-  log('=== Full Historical Sync Complete ===');
-}
+// --- Utilities ---
 
 /** Set script properties from key-value object. Run via Apps Script API or GAS editor. */
 function setScriptProperties(props: Record<string, string>): void {
@@ -41,19 +55,25 @@ function installTriggers(): void {
     ScriptApp.deleteTrigger(trigger);
   }
 
-  // Daily sync at 6:00 AM JST
+  // Toggl hourly sync: time entries every hour
+  ScriptApp.newTrigger('togglHourlySync')
+    .timeBased()
+    .everyHours(1)
+    .create();
+
+  // Daily sync at 12:00 PM JST: Toggl + Fitbit
   ScriptApp.newTrigger('dailySync')
     .timeBased()
     .everyDays(1)
-    .atHour(6)
+    .atHour(12)
     .create();
 
-  // Weekly historical sync on Monday at 3:00 AM JST
-  ScriptApp.newTrigger('weeklyHistoricalSync')
+  // Toggl weekly historical sync on Monday at 3:00 AM JST
+  ScriptApp.newTrigger('togglWeeklyHistoricalSync')
     .timeBased()
     .onWeekDay(ScriptApp.WeekDay.MONDAY)
     .atHour(3)
     .create();
 
-  log('Triggers installed');
+  log('Triggers installed: togglHourlySync, dailySync, togglWeeklyHistoricalSync');
 }
