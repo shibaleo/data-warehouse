@@ -1,0 +1,11 @@
+name,name_ja,description,coarse_category,sort_order
+Vitals,生命・健康維持,Physiological and hygiene necessities,Essentials,1
+Sleep,睡眠,Daily main sleep,Essentials,2
+Exercise,運動,Physical activities,Essentials,3
+Overhead,間接作業,Socially required activities and errands,Obligation,4
+Work,仕事,Professional work,Obligation,5
+Education,勉強,Formal learning for school or certifications,Obligation,6
+Creative,創造的探求,Building creating and exploring from curiosity,Leisure,7
+Social,社交,Free time for social activities,Leisure,8
+Meta,内省,Self-reflection and introspection,Leisure,9
+Pleasure,余暇,Free time for pleasure activities,Leisure,10

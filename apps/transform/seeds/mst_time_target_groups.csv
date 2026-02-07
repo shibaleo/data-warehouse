@@ -1,0 +1,6 @@
+id,name,time_category_personal,day_type,direction,valid_from,valid_until,description
+1,edu_dec,Education,Education,more,2025-12-06,,2025年12月のEducation目標
+2,sleep_daily,Sleep,all,neutral,2025-01-01,,日次睡眠目標
+3,drift_daily,Drift,all,less,2025-01-01,,日次漂流上限
+4,work_workday,Work,Work,neutral,2025-01-01,,勤務日のWork目安
+5,leisure_leisure,Leisure,Leisure,more,2025-01-01,,休日のLeisure目標

@@ -1,0 +1,32 @@
+version: 2
+
+models:
+  - name: dim_time_projects
+    description: "Toggl projects dimension"
+    columns:
+      - name: project_id
+        data_tests: [unique, not_null]
+      - name: project_name
+        data_tests: [not_null]
+
+  - name: dim_category_time_personal
+    description: "Personal time categories with color mapping"
+    columns:
+      - name: name
+        data_tests: [unique, not_null]
+      - name: sort_order
+        data_tests: [not_null]
+
+  - name: dim_category_time_personal_coarse
+    description: "Coarse personal time categories"
+    columns:
+      - name: name
+        data_tests: [unique, not_null]
+
+  - name: dim_category_time_social
+    description: "Social time categories with client mapping"
+    columns:
+      - name: name
+        data_tests: [unique, not_null]
+      - name: sort_order
+        data_tests: [not_null]

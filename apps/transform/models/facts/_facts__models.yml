@@ -1,0 +1,46 @@
+version: 2
+
+models:
+  - name: fct_time_records_actual
+    description: "Actual time records with category mapping and continuous time adjustment"
+    columns:
+      - name: id
+        data_tests: [unique, not_null]
+      - name: source_id
+        data_tests: [not_null]
+      - name: start_at
+        data_tests: [not_null]
+      - name: end_at
+        data_tests: [not_null]
+      - name: duration_seconds
+        data_tests: [not_null]
+      - name: social_category
+        data_tests: [not_null]
+      - name: personal_category
+        data_tests: [not_null]
+      - name: source
+        data_tests:
+          - not_null
+          - accepted_values:
+              arguments:
+                values: ['toggl_track', 'generated']
+
+  - name: fct_time_records_actual_split
+    description: "Actual time records split by JST day boundary"
+    columns:
+      - name: id
+        data_tests: [unique, not_null]
+      - name: source_id
+        data_tests: [not_null]
+      - name: start_at
+        data_tests: [not_null]
+      - name: end_at
+        data_tests: [not_null]
+      - name: duration_seconds
+        data_tests: [not_null]
+      - name: source
+        data_tests:
+          - not_null
+          - accepted_values:
+              arguments:
+                values: ['toggl_track', 'generated']

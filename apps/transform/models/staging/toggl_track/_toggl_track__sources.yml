@@ -1,0 +1,49 @@
+version: 2
+
+sources:
+  - name: raw_toggl_track
+    description: "Toggl Track raw API responses"
+    schema: data_warehouse
+    tables:
+      - name: raw_toggl_track__time_entries
+        description: "Toggl Track API v9 time entries (daily sync)"
+        columns:
+          - name: id
+            description: "Primary key (UUID)"
+          - name: source_id
+            description: "Toggl Track time entry ID"
+          - name: data
+            description: "Raw JSON response from Toggl Track API"
+          - name: synced_at
+            description: "Sync timestamp"
+          - name: api_version
+            description: "API version (v9)"
+
+      - name: raw_toggl_track__time_entries_report
+        description: "Toggl Reports API v3 time entries (full history)"
+        columns:
+          - name: id
+            description: "Primary key (UUID)"
+          - name: source_id
+            description: "Toggl Track time entry ID"
+          - name: data
+            description: "Raw JSON response from Toggl Reports API"
+          - name: synced_at
+            description: "Sync timestamp"
+          - name: api_version
+            description: "API version (v3)"
+
+      - name: raw_toggl_track__projects
+        description: "Toggl Track projects"
+      - name: raw_toggl_track__clients
+        description: "Toggl Track clients"
+      - name: raw_toggl_track__tags
+        description: "Toggl Track tags"
+      - name: raw_toggl_track__workspaces
+        description: "Toggl Track workspaces"
+      - name: raw_toggl_track__users
+        description: "Toggl Track workspace users"
+      - name: raw_toggl_track__me
+        description: "Toggl Track current user profile"
+      - name: raw_toggl_track__groups
+        description: "Toggl Track workspace groups"

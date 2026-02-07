@@ -1,0 +1,71 @@
+version: 2
+
+models:
+  - name: stg_toggl_track__time_entries
+    description: "Toggl Track time entries (Unified from Track API v9 and Reports API v3)"
+    columns:
+      - name: time_entry_id
+        data_tests: [unique, not_null]
+      - name: workspace_id
+        data_tests: [not_null]
+      - name: user_id
+        data_tests: [not_null]
+      - name: started_at
+        data_tests: [not_null]
+      - name: synced_at
+        data_tests: [not_null]
+
+  - name: stg_toggl_track__projects
+    columns:
+      - name: id
+        data_tests: [unique, not_null]
+      - name: project_id
+        data_tests: [unique, not_null]
+      - name: project_name
+        data_tests: [not_null]
+
+  - name: stg_toggl_track__clients
+    columns:
+      - name: id
+        data_tests: [unique, not_null]
+      - name: client_id
+        data_tests: [unique, not_null]
+      - name: client_name
+        data_tests: [not_null]
+
+  - name: stg_toggl_track__tags
+    columns:
+      - name: id
+        data_tests: [unique, not_null]
+      - name: tag_id
+        data_tests: [unique, not_null]
+      - name: tag_name
+        data_tests: [not_null]
+
+  - name: stg_toggl_track__workspaces
+    columns:
+      - name: id
+        data_tests: [unique, not_null]
+      - name: workspace_id
+        data_tests: [unique, not_null]
+
+  - name: stg_toggl_track__users
+    columns:
+      - name: id
+        data_tests: [unique, not_null]
+      - name: user_id
+        data_tests: [unique, not_null]
+
+  - name: stg_toggl_track__me
+    columns:
+      - name: id
+        data_tests: [unique, not_null]
+      - name: user_id
+        data_tests: [unique, not_null]
+
+  - name: stg_toggl_track__groups
+    columns:
+      - name: id
+        data_tests: [unique, not_null]
+      - name: group_id
+        data_tests: [unique, not_null]

@@ -1,0 +1,94 @@
+version: 2
+
+seeds:
+  - name: mst_time_target_groups
+    description: "Time target group definitions"
+    config:
+      column_types:
+        id: integer
+        name: text
+        time_category_personal: text
+        day_type: text
+        direction: text
+        valid_from: date
+        valid_until: date
+        description: text
+    columns:
+      - name: id
+        data_tests: [unique, not_null]
+      - name: name
+        data_tests: [unique, not_null]
+
+  - name: mst_time_targets
+    description: "Time target values"
+    config:
+      column_types:
+        id: integer
+        group_id: integer
+        version: text
+        scope_start: date
+        scope_end: date
+        target_min: integer
+        valid_from: date
+        valid_until: date
+        description: text
+    columns:
+      - name: id
+        data_tests: [unique, not_null]
+      - name: group_id
+        data_tests:
+          - not_null
+          - relationships:
+              arguments:
+                to: ref('mst_time_target_groups')
+                field: id
+
+  - name: seed_category_time_personal
+    description: "Personal time category definitions (replaces Coda)"
+    config:
+      column_types:
+        name: text
+        name_ja: text
+        description: text
+        coarse_category: text
+        sort_order: integer
+    columns:
+      - name: name
+        data_tests: [unique, not_null]
+
+  - name: seed_category_time_personal_coarse
+    description: "Coarse personal time categories"
+    config:
+      column_types:
+        name: text
+        sort_order: integer
+    columns:
+      - name: name
+        data_tests: [unique, not_null]
+
+  - name: seed_category_time_social
+    description: "Social time category definitions"
+    config:
+      column_types:
+        name: text
+        name_ja: text
+        description: text
+        sort_order: integer
+    columns:
+      - name: name
+        data_tests: [unique, not_null]
+
+  - name: seed_toggl_color_to_personal
+    description: "Toggl color to personal category mapping"
+    config:
+      column_types:
+        toggl_color_hex: text
+        toggl_color_name: text
+        time_category_personal: text
+
+  - name: seed_toggl_client_to_social
+    description: "Toggl client to social category mapping"
+    config:
+      column_types:
+        toggl_client_name: text
+        time_category_social: text

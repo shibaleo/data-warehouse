@@ -1,0 +1,4 @@
+name,name_ja,description,sort_order
+PRIMARY,一次活動,Physiological necessities: sleep meals and personal care,1
+SECONDARY,二次活動,Obligatory activities: work education household chores and commuting,2
+TERTIARY,三次活動,Discretionary time: leisure hobbies and social activities,3

@@ -1,0 +1,13 @@
+dwh:
+  target: dev
+  outputs:
+    dev:
+      type: postgres
+      host: "{{ env_var('NEON_HOST') }}"
+      port: 5432
+      user: "{{ env_var('NEON_USER') }}"
+      password: "{{ env_var('NEON_PASSWORD') }}"
+      dbname: "{{ env_var('NEON_DB') }}"
+      schema: data_warehouse
+      threads: 4
+      sslmode: require
