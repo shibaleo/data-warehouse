@@ -25,12 +25,13 @@ function togglFullHistoricalSync(): void {
 
 // --- Daily sync (all services) ---
 
-/** Daily sync: Toggl masters + time entries + Fitbit all */
+/** Daily sync: Toggl masters + time entries + Fitbit all + Tanita all */
 function dailySync(): void {
   log('=== Daily Sync Start ===');
   syncMasters();
   syncTimeEntries({ days: 3 });
   syncFitbitAll(7);
+  syncTanitaAll(30);
   log('=== Daily Sync Complete ===');
 }
 
@@ -61,7 +62,7 @@ function installTriggers(): void {
     .everyHours(1)
     .create();
 
-  // Daily sync at 12:00 PM JST: Toggl + Fitbit
+  // Daily sync at 12:00 PM JST: Toggl + Fitbit + Tanita
   ScriptApp.newTrigger('dailySync')
     .timeBased()
     .everyDays(1)

@@ -1,7 +1,7 @@
 {
-  "name": "dwh-connector",
+  "name": "data-warehouse-connector",
   "version": "1.0.0",
-  "description": "GAS-based data connector for DWH (Toggl Track → Neon PG)",
+  "description": "GAS-based data connector for Data Warehouse (Toggl, Fitbit, Tanita → Neon PG)",
   "scripts": {
     "push": "clasp push",
     "pull": "clasp pull",

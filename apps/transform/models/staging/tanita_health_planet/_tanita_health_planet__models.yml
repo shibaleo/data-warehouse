@@ -1,0 +1,85 @@
+# Tanita Health Planet Models
+# =============================================================================
+# staging層モデルの定義
+# =============================================================================
+
+version: 2
+
+models:
+  - name: stg_tanita_health_planet__body_composition
+    description: "Tanita Health Planet body composition data (weight, body fat)"
+    columns:
+      - name: id
+        description: "Primary key (UUID)"
+        data_tests:
+          - unique
+          - not_null
+      - name: source_id
+        description: "Measurement datetime in ISO8601 UTC format"
+        data_tests:
+          - unique
+          - not_null
+      - name: measured_at
+        description: "Measurement datetime (UTC)"
+        data_tests:
+          - not_null
+      - name: measured_at_jst
+        description: "Measurement datetime (JST, for display)"
+      - name: weight
+        description: "Weight in kg"
+      - name: body_fat_percent
+        description: "Body fat percentage"
+      - name: model
+        description: "Device model code"
+      - name: raw_date
+        description: "Original date from API (12-digit format)"
+      - name: raw_tag
+        description: "Original measurement tag from API"
+      - name: raw_keydata
+        description: "Original keydata from API"
+      - name: synced_at
+        description: "Sync timestamp"
+        data_tests:
+          - not_null
+      - name: api_version
+        description: "API version"
+
+  - name: stg_tanita_health_planet__blood_pressure
+    description: "Tanita Health Planet blood pressure data (systolic, diastolic, pulse)"
+    columns:
+      - name: id
+        description: "Primary key (UUID)"
+        data_tests:
+          - unique
+          - not_null
+      - name: source_id
+        description: "Measurement datetime in ISO8601 UTC format"
+        data_tests:
+          - unique
+          - not_null
+      - name: measured_at
+        description: "Measurement datetime (UTC)"
+        data_tests:
+          - not_null
+      - name: measured_at_jst
+        description: "Measurement datetime (JST, for display)"
+      - name: systolic
+        description: "Systolic blood pressure in mmHg"
+      - name: diastolic
+        description: "Diastolic blood pressure in mmHg"
+      - name: pulse
+        description: "Pulse rate in bpm"
+      - name: model
+        description: "Device model code"
+      - name: raw_date
+        description: "Original date from API (12-digit format)"
+      - name: raw_tag
+        description: "Original measurement tag from API"
+      - name: raw_keydata
+        description: "Original keydata from API"
+      - name: synced_at
+        description: "Sync timestamp"
+        data_tests:
+          - not_null
+      - name: api_version
+        description: "API version"

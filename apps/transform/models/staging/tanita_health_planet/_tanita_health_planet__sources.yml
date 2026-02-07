@@ -1,0 +1,39 @@
+# Tanita Health Planet Sources
+# =============================================================================
+# raw層テーブルの定義
+# =============================================================================
+
+version: 2
+
+sources:
+  - name: raw_tanita_health_planet
+    description: "Tanita Health Planet API raw responses"
+    schema: data_warehouse
+    tables:
+      - name: raw_tanita_health_planet__body_composition
+        description: "Tanita Health Planet body composition data (weight, body fat)"
+        columns:
+          - name: id
+            description: "Primary key (UUID)"
+          - name: source_id
+            description: "Measurement datetime in ISO8601 UTC format"
+          - name: data
+            description: "Raw JSON response from Health Planet innerscan API"
+          - name: synced_at
+            description: "Sync timestamp"
+          - name: api_version
+            description: "API version (v1)"
+
+      - name: raw_tanita_health_planet__blood_pressure
+        description: "Tanita Health Planet blood pressure data (systolic, diastolic, pulse)"
+        columns:
+          - name: id
+            description: "Primary key (UUID)"
+          - name: source_id
+            description: "Measurement datetime in ISO8601 UTC format"
+          - name: data
+            description: "Raw JSON response from Health Planet sphygmomanometer API"
+          - name: synced_at
+            description: "Sync timestamp"
+          - name: api_version
+            description: "API version (v1)"
