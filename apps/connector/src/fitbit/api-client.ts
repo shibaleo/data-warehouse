@@ -15,7 +15,7 @@ function fitbitGet(endpoint: string): unknown {
   if (code === 401) {
     log('Fitbit token expired, refreshing...');
     refreshFitbitToken();
-    const newToken = cachedCredentials!.accessToken;
+    const newToken = cachedFitbitCredentials!.accessToken;
     const retryResponse = httpFetch(`${FITBIT_API_BASE}${endpoint}`, {
       headers: { 'Authorization': `Bearer ${newToken}` },
     });

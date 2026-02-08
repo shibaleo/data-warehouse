@@ -36,7 +36,7 @@ function httpFetch(url: string, options: HttpOptions = {}): GoogleAppsScript.URL
     return UrlFetchApp.fetch(url, fetchOptions);
   }
 
-  if (code >= 400) {
+  if (code >= 400 && options.muteHttpExceptions === false) {
     throw new Error(`HTTP ${code}: ${response.getContentText().substring(0, 500)}`);
   }
 

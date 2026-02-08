@@ -83,7 +83,7 @@ function tanitaGet(endpoint: string, params: Record<string, string>): unknown {
   if (code === 401) {
     log('Tanita token expired, refreshing...');
     refreshTanitaToken();
-    params['access_token'] = cachedCredentials!.accessToken;
+    params['access_token'] = cachedTanitaCredentials!.accessToken;
     const retryQuery = Object.entries(params)
       .map(([k, v]) => `${k}=${encodeURIComponent(v)}`)
       .join('&');

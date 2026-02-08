@@ -1,7 +1,7 @@
 // Fitbit OAuth2 token management via Neon oauth2_credentials table
 
 const FITBIT_TOKEN_URL = 'https://api.fitbit.com/oauth2/token';
-const TOKEN_REFRESH_THRESHOLD_MIN = 60;
+const FITBIT_TOKEN_REFRESH_THRESHOLD_MIN = 60;
 
 interface FitbitCredentials {
   clientId: string;
@@ -12,10 +12,10 @@ interface FitbitCredentials {
 }
 
 // In-memory cache for current execution
-let cachedCredentials: FitbitCredentials | null = null;
+let cachedFitbitCredentials: FitbitCredentials | null = null;
 
 function getFitbitCredentials(): FitbitCredentials {
-  if (cachedCredentials) return cachedCredentials;
+  if (cachedFitbitCredentials) return cachedFitbitCredentials;
 
   const result = neonQuery(
     `SELECT client_id, client_secret, access_token, refresh_token, expires_at
@@ -29,7 +29,7 @@ function getFitbitCredentials(): FitbitCredentials {
   }
 
   const row = result.rows[0];
-  cachedCredentials = {
+  cachedFitbitCredentials = {
     clientId: String(row[0]),
     clientSecret: String(row[1]),
     accessToken: String(row[2]),
@@ -37,7 +37,7 @@ function getFitbitCredentials(): FitbitCredentials {
     expiresAt: row[4] ? String(row[4]) : null,
   };
 
-  return cachedCredentials;
+  return cachedFitbitCredentials;
 }
 
 function refreshFitbitToken(): void {
@@ -69,7 +69,7 @@ function refreshFitbitToken(): void {
   );
 
   // Update cache
-  cachedCredentials = {
+  cachedFitbitCredentials = {
     clientId: creds.clientId,
     clientSecret: creds.clientSecret,
     accessToken: data.access_token,
@@ -86,12 +86,12 @@ function getFitbitAccessToken(): string {
   // Check expiry
   if (creds.expiresAt) {
     const minutesUntilExpiry = (new Date(creds.expiresAt).getTime() - Date.now()) / 1000 / 60;
-    if (minutesUntilExpiry > TOKEN_REFRESH_THRESHOLD_MIN) {
+    if (minutesUntilExpiry > FITBIT_TOKEN_REFRESH_THRESHOLD_MIN) {
       return creds.accessToken;
     }
   }
 
   // Refresh needed
   refreshFitbitToken();
-  return cachedCredentials!.accessToken;
+  return cachedFitbitCredentials!.accessToken;
 }
