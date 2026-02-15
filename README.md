@@ -1,6 +1,7 @@
 # data-warehouse
 
-SaaSに散在する個人データを一つのDBに集約し、個人向けミニData Warehouseとして分析基盤を構築するプロジェクト。
+SaaSに散在する個人データを一つのDBに集約し、分析基盤を構築するプロジェクト。
+モダンデータスタックのデザインパターン（ELT、raw/staging/dimension/factレイヤリング、冪等upsert、dbtによる変換）を踏襲しつつ、個人利用に適したインフラ（GAS + Neon free tier）とデータモデルを採用している。
 
 ## Architecture
 
@@ -114,3 +115,7 @@ DDL files in `migrations/` create the schema from scratch:
 3. `003_create_fitbit_raw_tables.sql` — Fitbit raw tables
 4. `004_create_tanita_raw_tables.sql` — Tanita Health Planet raw tables
 5. `006_create_zaim_raw_tables.sql` — Zaim raw tables
+
+## Roadmap
+
+- **データソース拡充**: 新たなSaaS/APIからのデータ収集を追加
