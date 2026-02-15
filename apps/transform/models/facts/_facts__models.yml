@@ -78,7 +78,8 @@ models:
         data_tests:
           - not_null
           - accepted_values:
-              values: ['income', 'payment', 'transfer']
+              arguments:
+                values: ['income', 'payment', 'transfer']
       - name: transaction_date
         data_tests: [not_null]
       - name: amount

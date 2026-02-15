@@ -30,7 +30,8 @@ models:
         data_tests:
           - not_null
           - accepted_values:
-              values: ['income', 'payment', 'transfer']
+              arguments:
+                values: ['income', 'payment', 'transfer']
       - name: transaction_date
         description: "Transaction date"
         data_tests:
@@ -93,7 +94,8 @@ models:
         description: "Category type: payment or income"
         data_tests:
           - accepted_values:
-              values: ['payment', 'income']
+              arguments:
+                values: ['payment', 'income']
       - name: parent_category_id
         description: "Parent category id (for custom categories)"
       - name: sort_order
