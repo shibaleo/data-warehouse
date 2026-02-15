@@ -8,11 +8,12 @@ const ZAIM_API_VERSION = 'v2';
 
 function syncZaimMoney(days: number = 30): void {
   const now = new Date();
+  const tomorrow = new Date(now.getTime() + 24 * 60 * 60 * 1000);
   const start = new Date(now.getTime() - days * 24 * 60 * 60 * 1000);
 
   log(`Syncing Zaim money (${days} days)...`);
   const startDate = zaimFormatDate(start);
-  const endDate = zaimFormatDate(now);
+  const endDate = zaimFormatDate(tomorrow);
 
   const money = fetchZaimAllMoney(startDate, endDate);
 
@@ -48,7 +49,9 @@ function syncZaimMoney(days: number = 30): void {
 function syncZaimMoneyAll(): void {
   log('Syncing Zaim money (ALL records)...');
   const startDate = '2020-01-01';
-  const endDate = zaimFormatDate(new Date());
+  const now = new Date();
+  const tomorrow = new Date(now.getTime() + 24 * 60 * 60 * 1000);
+  const endDate = zaimFormatDate(tomorrow);
 
   const money = fetchZaimAllMoney(startDate, endDate);
 
@@ -172,7 +175,7 @@ function syncZaimMasters(): void {
   syncZaimAccount();
 }
 
-function syncZaimAll(days: number = 30): void {
+function syncZaimAll(days: number = 400): void {
   syncZaimMasters();
   syncZaimMoney(days);
 }

@@ -9,7 +9,8 @@ interface SyncTimeEntriesOptions {
 function syncTimeEntries(options: SyncTimeEntriesOptions = {}): void {
   const days = options.days || 3;
   const now = new Date();
-  const endDate = options.end || Utilities.formatDate(now, 'UTC', 'yyyy-MM-dd');
+  const tomorrow = new Date(now.getTime() + 24 * 60 * 60 * 1000);
+  const endDate = options.end || Utilities.formatDate(tomorrow, 'UTC', 'yyyy-MM-dd');
   const startDateObj = new Date(now.getTime() - days * 24 * 60 * 60 * 1000);
   const startDate = options.start || Utilities.formatDate(startDateObj, 'UTC', 'yyyy-MM-dd');
 

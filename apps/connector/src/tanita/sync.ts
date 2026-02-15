@@ -6,10 +6,11 @@
 
 function syncTanitaBodyComposition(days: number = 30): void {
   const now = new Date();
+  const tomorrow = new Date(now.getTime() + 24 * 60 * 60 * 1000);
   const start = new Date(now.getTime() - days * 24 * 60 * 60 * 1000);
 
   log(`Syncing Tanita body composition (${days} days)...`);
-  const measurements = tanitaFetchWithChunks(start, now, fetchTanitaBodyComposition);
+  const measurements = tanitaFetchWithChunks(start, tomorrow, fetchTanitaBodyComposition);
 
   if (measurements.length === 0) { log('No body composition data'); return; }
 
@@ -36,10 +37,11 @@ function syncTanitaBodyComposition(days: number = 30): void {
 
 function syncTanitaBloodPressure(days: number = 30): void {
   const now = new Date();
+  const tomorrow = new Date(now.getTime() + 24 * 60 * 60 * 1000);
   const start = new Date(now.getTime() - days * 24 * 60 * 60 * 1000);
 
   log(`Syncing Tanita blood pressure (${days} days)...`);
-  const measurements = tanitaFetchWithChunks(start, now, fetchTanitaBloodPressure);
+  const measurements = tanitaFetchWithChunks(start, tomorrow, fetchTanitaBloodPressure);
 
   if (measurements.length === 0) { log('No blood pressure data'); return; }
 

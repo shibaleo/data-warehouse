@@ -9,8 +9,9 @@ interface SyncReportOptions {
 function syncTimeEntriesReport(options: SyncReportOptions = {}): void {
   const days = options.days || 365;
   const now = new Date();
-  const endDate = options.end || Utilities.formatDate(now, 'UTC', 'yyyy-MM-dd');
-  const startDateObj = new Date(now.getTime() - days * 24 * 60 * 60 * 1000);
+  const tomorrow = new Date(now.getTime() + 24 * 60 * 60 * 1000);
+  const endDate = options.end || Utilities.formatDate(tomorrow, 'UTC', 'yyyy-MM-dd');
+  const startDateObj = new Date(tomorrow.getTime() - days * 24 * 60 * 60 * 1000);
   const startDate = options.start || Utilities.formatDate(startDateObj, 'UTC', 'yyyy-MM-dd');
 
   log(`Syncing time entries report: ${startDate} to ${endDate}`);

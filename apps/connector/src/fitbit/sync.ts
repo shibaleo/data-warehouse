@@ -6,10 +6,11 @@
 
 function syncFitbitSleep(days: number = 7): void {
   const now = new Date();
+  const tomorrow = new Date(now.getTime() + 24 * 60 * 60 * 1000);
   const start = new Date(now.getTime() - days * 24 * 60 * 60 * 1000);
 
   log(`Syncing Fitbit sleep (${days} days)...`);
-  const sleepLogs = fitbitFetchWithChunks(start, now, 100, fetchFitbitSleep);
+  const sleepLogs = fitbitFetchWithChunks(start, tomorrow, 100, fetchFitbitSleep);
 
   if (sleepLogs.length === 0) { log('No sleep data'); return; }
 
@@ -41,10 +42,11 @@ function syncFitbitSleep(days: number = 7): void {
 
 function syncFitbitActivity(days: number = 7): void {
   const now = new Date();
+  const tomorrow = new Date(now.getTime() + 24 * 60 * 60 * 1000);
   const start = new Date(now.getTime() - days * 24 * 60 * 60 * 1000);
 
   log(`Syncing Fitbit activity (${days} days)...`);
-  const activities = fetchFitbitActivityRange(start, now);
+  const activities = fetchFitbitActivityRange(start, tomorrow);
 
   if (activities.length === 0) { log('No activity data'); return; }
 
@@ -79,10 +81,11 @@ function syncFitbitActivity(days: number = 7): void {
 
 function syncFitbitHeartRate(days: number = 7): void {
   const now = new Date();
+  const tomorrow = new Date(now.getTime() + 24 * 60 * 60 * 1000);
   const start = new Date(now.getTime() - days * 24 * 60 * 60 * 1000);
 
   log(`Syncing Fitbit heart rate (${days} days)...`);
-  const heartRates = fitbitFetchWithChunks(start, now, 30, fetchFitbitHeartRate);
+  const heartRates = fitbitFetchWithChunks(start, tomorrow, 30, fetchFitbitHeartRate);
 
   if (heartRates.length === 0) { log('No heart rate data'); return; }
 
@@ -105,10 +108,11 @@ function syncFitbitHeartRate(days: number = 7): void {
 
 function syncFitbitHrv(days: number = 7): void {
   const now = new Date();
+  const tomorrow = new Date(now.getTime() + 24 * 60 * 60 * 1000);
   const start = new Date(now.getTime() - days * 24 * 60 * 60 * 1000);
 
   log(`Syncing Fitbit HRV (${days} days)...`);
-  const hrvData = fitbitFetchWithChunks(start, now, 30, fetchFitbitHrv);
+  const hrvData = fitbitFetchWithChunks(start, tomorrow, 30, fetchFitbitHrv);
 
   if (hrvData.length === 0) { log('No HRV data'); return; }
 
@@ -131,10 +135,11 @@ function syncFitbitHrv(days: number = 7): void {
 
 function syncFitbitSpo2(days: number = 7): void {
   const now = new Date();
+  const tomorrow = new Date(now.getTime() + 24 * 60 * 60 * 1000);
   const start = new Date(now.getTime() - days * 24 * 60 * 60 * 1000);
 
   log(`Syncing Fitbit SpO2 (${days} days)...`);
-  const spo2Data = fitbitFetchWithChunks(start, now, 30, fetchFitbitSpo2);
+  const spo2Data = fitbitFetchWithChunks(start, tomorrow, 30, fetchFitbitSpo2);
 
   if (spo2Data.length === 0) { log('No SpO2 data'); return; }
 
@@ -158,10 +163,11 @@ function syncFitbitSpo2(days: number = 7): void {
 
 function syncFitbitBreathingRate(days: number = 7): void {
   const now = new Date();
+  const tomorrow = new Date(now.getTime() + 24 * 60 * 60 * 1000);
   const start = new Date(now.getTime() - days * 24 * 60 * 60 * 1000);
 
   log(`Syncing Fitbit breathing rate (${days} days)...`);
-  const brData = fitbitFetchWithChunks(start, now, 30, fetchFitbitBreathingRate);
+  const brData = fitbitFetchWithChunks(start, tomorrow, 30, fetchFitbitBreathingRate);
 
   if (brData.length === 0) { log('No breathing rate data'); return; }
 
@@ -183,10 +189,11 @@ function syncFitbitBreathingRate(days: number = 7): void {
 
 function syncFitbitCardioScore(days: number = 7): void {
   const now = new Date();
+  const tomorrow = new Date(now.getTime() + 24 * 60 * 60 * 1000);
   const start = new Date(now.getTime() - days * 24 * 60 * 60 * 1000);
 
   log(`Syncing Fitbit cardio score (${days} days)...`);
-  const csData = fitbitFetchWithChunks(start, now, 30, fetchFitbitCardioScore);
+  const csData = fitbitFetchWithChunks(start, tomorrow, 30, fetchFitbitCardioScore);
 
   if (csData.length === 0) { log('No cardio score data'); return; }
 
@@ -228,10 +235,11 @@ function syncFitbitCardioScore(days: number = 7): void {
 
 function syncFitbitTemperatureSkin(days: number = 7): void {
   const now = new Date();
+  const tomorrow = new Date(now.getTime() + 24 * 60 * 60 * 1000);
   const start = new Date(now.getTime() - days * 24 * 60 * 60 * 1000);
 
   log(`Syncing Fitbit temperature skin (${days} days)...`);
-  const tsData = fitbitFetchWithChunks(start, now, 30, fetchFitbitTemperatureSkin);
+  const tsData = fitbitFetchWithChunks(start, tomorrow, 30, fetchFitbitTemperatureSkin);
 
   if (tsData.length === 0) { log('No temperature skin data'); return; }
 
