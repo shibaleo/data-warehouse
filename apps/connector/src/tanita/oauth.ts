@@ -21,13 +21,13 @@ function getTanitaCredentials(): TanitaCredentials {
   const result = neonQuery(
     `SELECT client_id, client_secret, access_token, refresh_token, expires_at,
             (metadata->>'redirect_uri') as redirect_uri
-     FROM data_warehouse.oauth2_credentials
+     FROM data_warehouse.credentials
      WHERE service_name = $1`,
     ['tanita_health_planet']
   ) as { fields: unknown[]; rows: unknown[][] };
 
   if (!result.rows || result.rows.length === 0) {
-    throw new Error('Tanita credentials not found in oauth2_credentials');
+    throw new Error('Tanita credentials not found in credentials');
   }
 
   const row = result.rows[0];
@@ -78,7 +78,7 @@ function refreshTanitaToken(): void {
 
   // Update Neon
   neonQuery(
-    `UPDATE data_warehouse.oauth2_credentials
+    `UPDATE data_warehouse.credentials
      SET access_token = $1, expires_at = $2, updated_at = now()
      WHERE service_name = $3`,
     [data.access_token, expiresAt, 'tanita_health_planet']

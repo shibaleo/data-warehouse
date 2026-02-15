@@ -5,9 +5,40 @@
 const TOGGL_API_V9 = 'https://api.track.toggl.com/api/v9';
 const TOGGL_REPORTS_V3 = 'https://api.track.toggl.com/reports/api/v3';
 
+interface TogglCredentials {
+  apiToken: string;
+  workspaceId: string;
+}
+
+let cachedTogglCredentials: TogglCredentials | null = null;
+
+function getTogglCredentials(): TogglCredentials {
+  if (cachedTogglCredentials) return cachedTogglCredentials;
+
+  const result = neonQuery(
+    `SELECT access_token,
+            (metadata->>'workspace_id') as workspace_id
+     FROM data_warehouse.credentials
+     WHERE service_name = $1`,
+    ['toggl_track']
+  ) as { fields: unknown[]; rows: unknown[][] };
+
+  if (!result.rows || result.rows.length === 0) {
+    throw new Error('Toggl credentials not found in credentials');
+  }
+
+  const row = result.rows[0];
+  cachedTogglCredentials = {
+    apiToken: String(row[0]),
+    workspaceId: String(row[1]),
+  };
+
+  return cachedTogglCredentials;
+}
+
 function getTogglAuthHeader(): string {
-  const config = getConfig();
-  const encoded = Utilities.base64Encode(`${config.togglApiToken}:api_token`);
+  const creds = getTogglCredentials();
+  const encoded = Utilities.base64Encode(`${creds.apiToken}:api_token`);
   return `Basic ${encoded}`;
 }
 
@@ -39,28 +70,28 @@ function fetchWorkspaces(): Record<string, unknown>[] {
 }
 
 function fetchProjects(): Record<string, unknown>[] {
-  const config = getConfig();
-  return togglGet(`${TOGGL_API_V9}/workspaces/${config.togglWorkspaceId}/projects`) as Record<string, unknown>[];
+  const creds = getTogglCredentials();
+  return togglGet(`${TOGGL_API_V9}/workspaces/${creds.workspaceId}/projects`) as Record<string, unknown>[];
 }
 
 function fetchClients(): Record<string, unknown>[] {
-  const config = getConfig();
-  return togglGet(`${TOGGL_API_V9}/workspaces/${config.togglWorkspaceId}/clients`) as Record<string, unknown>[];
+  const creds = getTogglCredentials();
+  return togglGet(`${TOGGL_API_V9}/workspaces/${creds.workspaceId}/clients`) as Record<string, unknown>[];
 }
 
 function fetchTags(): Record<string, unknown>[] {
-  const config = getConfig();
-  return togglGet(`${TOGGL_API_V9}/workspaces/${config.togglWorkspaceId}/tags`) as Record<string, unknown>[];
+  const creds = getTogglCredentials();
+  return togglGet(`${TOGGL_API_V9}/workspaces/${creds.workspaceId}/tags`) as Record<string, unknown>[];
 }
 
 function fetchUsers(): Record<string, unknown>[] {
-  const config = getConfig();
-  return togglGet(`${TOGGL_API_V9}/workspaces/${config.togglWorkspaceId}/users`) as Record<string, unknown>[];
+  const creds = getTogglCredentials();
+  return togglGet(`${TOGGL_API_V9}/workspaces/${creds.workspaceId}/users`) as Record<string, unknown>[];
 }
 
 function fetchGroups(): Record<string, unknown>[] {
-  const config = getConfig();
-  return togglGet(`${TOGGL_API_V9}/workspaces/${config.togglWorkspaceId}/groups`) as Record<string, unknown>[];
+  const creds = getTogglCredentials();
+  return togglGet(`${TOGGL_API_V9}/workspaces/${creds.workspaceId}/groups`) as Record<string, unknown>[];
 }
 
 function fetchTimeEntries(startDate: string, endDate: string): Record<string, unknown>[] {
@@ -83,7 +114,7 @@ function fetchDetailedReport(
   firstRowNumber: number = 1,
   pageSize: number = 1000
 ): DetailedReportResponse {
-  const config = getConfig();
+  const creds = getTogglCredentials();
   const body = {
     start_date: startDate,
     end_date: endDate,
@@ -92,7 +123,7 @@ function fetchDetailedReport(
   };
 
   const raw = togglPost(
-    `${TOGGL_REPORTS_V3}/workspace/${config.togglWorkspaceId}/search/time_entries`,
+    `${TOGGL_REPORTS_V3}/workspace/${creds.workspaceId}/search/time_entries`,
     body
   ) as Record<string, unknown>[];
 

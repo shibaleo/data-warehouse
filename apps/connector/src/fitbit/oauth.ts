@@ -19,13 +19,13 @@ function getFitbitCredentials(): FitbitCredentials {
 
   const result = neonQuery(
     `SELECT client_id, client_secret, access_token, refresh_token, expires_at
-     FROM data_warehouse.oauth2_credentials
+     FROM data_warehouse.credentials
      WHERE service_name = $1`,
     ['fitbit']
   ) as { fields: unknown[]; rows: unknown[][] };
 
   if (!result.rows || result.rows.length === 0) {
-    throw new Error('Fitbit credentials not found in oauth2_credentials');
+    throw new Error('Fitbit credentials not found in credentials');
   }
 
   const row = result.rows[0];
@@ -62,7 +62,7 @@ function refreshFitbitToken(): void {
 
   // Update Neon
   neonQuery(
-    `UPDATE data_warehouse.oauth2_credentials
+    `UPDATE data_warehouse.credentials
      SET access_token = $1, refresh_token = $2, expires_at = $3, updated_at = now()
      WHERE service_name = $4`,
     [data.access_token, data.refresh_token, expiresAt, 'fitbit']

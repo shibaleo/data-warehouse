@@ -1,10 +1,10 @@
--- 002_create_oauth2_credentials.sql
+-- 002_create_credentials.sql
 -- =============================================================================
--- OAuth2 credentials table for GAS connector
--- Stores tokens in Neon, refreshed by GAS on each API call
+-- Credentials table for GAS connector
+-- Stores API tokens and OAuth2 tokens, refreshed by GAS on each API call
 -- =============================================================================
 
-CREATE TABLE IF NOT EXISTS data_warehouse.oauth2_credentials (
+CREATE TABLE IF NOT EXISTS data_warehouse.credentials (
     service_name TEXT PRIMARY KEY,
     client_id TEXT NOT NULL,
     client_secret TEXT NOT NULL,
@@ -13,8 +13,10 @@ CREATE TABLE IF NOT EXISTS data_warehouse.oauth2_credentials (
     token_type TEXT DEFAULT 'Bearer',
     expires_at TIMESTAMPTZ,
     scope TEXT,
+    metadata JSONB DEFAULT '{}',
     created_at TIMESTAMPTZ NOT NULL DEFAULT now(),
     updated_at TIMESTAMPTZ NOT NULL DEFAULT now()
 );
 
-COMMENT ON TABLE data_warehouse.oauth2_credentials IS 'OAuth2 credentials for external services (Fitbit, etc.)';
+COMMENT ON TABLE data_warehouse.credentials IS 'Credentials for external services (Fitbit, Tanita, Zaim, Toggl)';
+COMMENT ON COLUMN data_warehouse.credentials.metadata IS 'Service-specific metadata (e.g. redirect_uri, workspace_id)';

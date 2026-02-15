@@ -18,13 +18,13 @@ function getZaimCredentials(): ZaimCredentials {
   const result = neonQuery(
     `SELECT client_id, client_secret, access_token,
             (metadata->>'access_token_secret') as access_token_secret
-     FROM data_warehouse.oauth2_credentials
+     FROM data_warehouse.credentials
      WHERE service_name = $1`,
     ['zaim']
   ) as { fields: unknown[]; rows: unknown[][] };
 
   if (!result.rows || result.rows.length === 0) {
-    throw new Error('Zaim credentials not found in oauth2_credentials');
+    throw new Error('Zaim credentials not found in credentials');
   }
 
   const row = result.rows[0];
