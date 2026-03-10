@@ -1,6 +1,7 @@
-{{ config(enabled=false) }}
--- fct_time_records_actual_split.sql (DISABLED)
--- Moved to models/reports/rpt_time_records_continuous_split.sql
+-- rpt_time_records_continuous_split.sql
+-- Day-split version of rpt_time_records_continuous (JST 00:00:00 boundary)
+-- Visualization/BI only. DCMP does NOT reference this model.
+-- (Formerly fct_time_records_actual_split)
 
 with recursive source_records as (
     select
@@ -10,7 +11,7 @@ with recursive source_records as (
         description, project_name, project_color, tag_names,
         social_category, personal_category, coarse_personal_category,
         social_order, personal_order, coarse_order, project_order, source
-    from {{ ref('fct_time_records_actual') }}
+    from {{ ref('rpt_time_records_continuous') }}
 ),
 
 split_records as (

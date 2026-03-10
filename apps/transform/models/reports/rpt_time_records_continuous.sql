@@ -1,8 +1,7 @@
-{{ config(enabled=false) }}
--- fct_time_records_actual.sql (DISABLED)
--- Moved to models/reports/rpt_time_records_continuous.sql
--- This model generated synthetic "untracked_" rows with no stable UUID,
--- making it unsuitable as a DCMP data source. Use fct_toggl_time_entries instead.
+-- rpt_time_records_continuous.sql
+-- 24h continuous timeline with gap correction and untracked entry generation.
+-- Visualization/BI only. DCMP does NOT reference this model.
+-- (Formerly fct_time_records_actual)
 
 {% set gap_threshold_seconds = 300 %}
 

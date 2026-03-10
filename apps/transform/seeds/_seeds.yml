@@ -39,9 +39,8 @@ seeds:
         data_tests:
           - not_null
           - relationships:
-              arguments:
-                to: ref('mst_time_target_groups')
-                field: id
+              to: ref('mst_time_target_groups')
+              field: id
 
   - name: seed_category_time_personal
     description: "Personal time category definitions (replaces Coda)"

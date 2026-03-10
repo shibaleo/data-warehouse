@@ -11,9 +11,8 @@ Fitbit Web API ───┤
 Health Planet API ─┼── GAS (clasp/TS) ── Neon SQL over HTTP ──► Neon PostgreSQL
 Zaim API ─────────┘        ↑ time triggers                     data_warehouse.*
                                                                  raw_*  (tables)
-                           dbt (local) ────────────────────────► stg_*  (views)
-                                                                 dim_*  (views)
-                                                                 fct_*  (views)
+                           dbt (local) ────────────────────────► stg_*, dim_*  (views, data_warehouse)
+                                                                 fct_*, rpt_*  (views, data_presentation)
 
                            Grafana Cloud ◄──── PostgreSQL ─────► Dashboards
 ```
@@ -48,12 +47,19 @@ Source data cleaned and typed. One view per raw table.
 - `dim_category_time_personal` / `_coarse` — Personal time category hierarchy
 - `dim_category_time_social` — Social time categories
 
-### Facts (`fct_*`)
-- `fct_time_records_actual` — Time records with category mapping and gap filling
-- `fct_time_records_actual_split` — Time records split by JST day boundary
+### Facts (`fct_*`) — schema: `data_presentation`
+DCMP (data-composition) へのパブリック API。FK 解決のみ。合成行・補正なし。
+
+- `fct_toggl_time_entries` — Toggl 時間記録（DCMP 登録用）
 - `fct_health_sleep` — Daily sleep (Fitbit main sleep, one row per date)
 - `fct_health_body` — Daily body composition (Tanita, one row per date)
 - `fct_zaim_transactions` — Zaim transactions with category/genre/account names
+
+### Reports (`rpt_*`) — schema: `data_presentation`
+可視化・集計専用。DCMP は参照しない。
+
+- `rpt_time_records_continuous` — ギャップ補正済み連続タイムライン（旧 `fct_time_records_actual`）
+- `rpt_time_records_continuous_split` — 日跨ぎ分割版
 
 ## Project Structure
 
@@ -68,11 +74,12 @@ apps/
       lib/          #   Shared: HTTP client, Neon client, logger
       config.ts     #   GAS script properties (DATABASE_URL only)
       main.ts       #   GAS entry points & trigger setup
-  transform/        # dbt project — staging views, dimensions, facts
+  transform/        # dbt project — staging views, dimensions, facts/reports
     models/
-      staging/      #   stg_* views (toggl_track, fitbit, tanita, zaim)
-      dimensions/   #   dim_* views
-      facts/        #   fct_* views
+      staging/      #   stg_* views (toggl_track, fitbit, tanita, zaim)  → data_warehouse
+      dimensions/   #   dim_* views                                       → data_warehouse
+      facts/        #   fct_* views (DCMP 公開 API)                       → data_presentation
+      reports/      #   rpt_* views (可視化専用)                           → data_presentation
     seeds/          #   Category mapping CSVs
 migrations/         # SQL DDL for creating schema from scratch
 ```
@@ -102,9 +109,28 @@ GAS script properties only contain `DATABASE_URL` (Neon connection string).
 
 | Variable | Description |
 |---|---|
-| `DATABASE_URL` | Neon PostgreSQL connection string |
+| `DATABASE_URL` | Neon PostgreSQL connection string（pooler なし） |
+| `NEON_HOST` | Neon ホスト名（dbt profiles.yml が参照） |
+| `NEON_USER` | Neon ユーザー名 |
+| `NEON_PASSWORD` | Neon パスワード |
+| `NEON_DB` | データベース名（デフォルト: `neondb`） |
 
-`.env` に配置。GAS側は script properties に `DATABASE_URL` のみ設定。
+`.env` に配置（プロジェクトルート）。GAS 側は script properties に `DATABASE_URL` のみ設定。
+
+## Running dbt
+
+```bash
+# プロジェクトルートで .env を読み込んでから実行
+source .env && cd apps/transform && dbt run
+
+# 特定モデルのみ
+source .env && cd apps/transform && dbt run --select facts
+
+# 接続テスト
+source .env && cd apps/transform && dbt debug
+```
+
+> `run_dbt.py` は `.env` の読み込みを担うラッパーだが、`dbt` コマンドのパス解決の問題により現在は `source .env` での直接実行を推奨。
 
 ## Migrations
 

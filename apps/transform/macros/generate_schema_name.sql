@@ -1,4 +1,7 @@
 {% macro generate_schema_name(custom_schema_name, node) -%}
-    {# All models go to the same schema (data_warehouse). No custom schema prefix. #}
-    {{ target.schema }}
+    {%- if custom_schema_name is none -%}
+        {{ target.schema }}
+    {%- else -%}
+        {{ custom_schema_name | trim }}
+    {%- endif -%}
 {%- endmacro %}
