@@ -17,6 +17,10 @@
 //   - Inter-page pause = 100ms (quota is per-hour, so bursting within seconds is fine
 //     but a small pause keeps server-side queueing healthy)
 // Total cost for full 2.5-year resync ≈ 18 requests (well under quota).
+//
+// After Reports sync completes, the script also removes track entries (Track API v9
+// snapshot) that no longer exist in Reports — i.e. the user deleted them in Toggl.
+// In-progress entries are protected (Reports never returns those by API design).
 
 import { readFileSync } from 'node:fs';
 import { dirname, resolve } from 'node:path';
@@ -236,6 +240,30 @@ async function main() {
 
   console.log(`Done. Total upserted: ${total}`);
   console.log(`API requests used: ${apiRequestCount} (Toggl rate limit: 30/h)`);
+
+  const deleted = await cleanupStaleTrackEntries(databaseUrl, start, end);
+  console.log(`Cleanup: removed ${deleted} stale track entries (deleted in Toggl, no longer in Reports)`);
+}
+
+// Remove track entries that no longer exist in Reports — i.e. user deleted them in Toggl.
+// In-progress entries (stop IS NULL) are protected: Reports never returns those by design.
+// A 5-minute grace on synced_at protects against just-created entries that Reports has not seen yet.
+async function cleanupStaleTrackEntries(databaseUrl, startDate, endDate) {
+  const result = await neonSql(
+    databaseUrl,
+    `DELETE FROM data_warehouse.raw_toggl_track__time_entries t
+     WHERE (t.data->>'start')::timestamptz >= ($1)::timestamptz
+       AND (t.data->>'start')::timestamptz <  ($2)::timestamptz
+       AND (t.data->>'stop') IS NOT NULL
+       AND (t.data->>'duration')::bigint > 0
+       AND t.synced_at < now() - interval '5 minutes'
+       AND NOT EXISTS (
+         SELECT 1 FROM data_warehouse.raw_toggl_track__time_entries_report r
+         WHERE r.source_id = t.source_id
+       )`,
+    [`${startDate}T00:00:00Z`, `${endDate}T00:00:00Z`],
+  );
+  return result.rowCount ?? 0;
 }
 
 main().catch((err) => {
