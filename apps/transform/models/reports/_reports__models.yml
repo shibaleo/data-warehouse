@@ -76,6 +76,10 @@ models:
         description: "start_at の JST 曜日名 (Mon, Tue, ...)"
       - name: is_weekend
         description: "土日かどうか (boolean)。祝日は含まない"
+      - name: is_jp_holiday
+        description: "日本の祝日（振替休日・国民の休日含む）かどうか (boolean)。seed_jp_holidays 由来。土日と祝日が重なる日は両方 true"
+      - name: jp_holiday_name
+        description: "祝日名（例: 元日、昭和の日、振替休日）。祝日でない日は NULL"
 
   - name: rpt_work_sessions_jst
     description: |

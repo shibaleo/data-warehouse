@@ -115,3 +115,15 @@ seeds:
     columns:
       - name: project_name
         data_tests: [unique, not_null]
+
+  - name: seed_jp_holidays
+    description: "Japanese national holidays (Cabinet Office official list, 2023-2027)"
+    config:
+      column_types:
+        jst_date: date
+        name: text
+    columns:
+      - name: jst_date
+        data_tests: [unique, not_null]
+      - name: name
+        data_tests: [not_null]
