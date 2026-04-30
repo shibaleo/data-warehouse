@@ -155,7 +155,7 @@ async function fetchAllDetailedReport(workspaceId, auth, startDate, endDate) {
 // ---- Upsert (idempotent ON CONFLICT) --------------------------------------
 
 async function upsertEntries(databaseUrl, entries) {
-  if (entries.length === 0) return 0;
+  if (entries.length === 0) return { upserted: 0, unique: [] };
 
   const seen = new Set();
   const unique = [];
@@ -167,7 +167,7 @@ async function upsertEntries(databaseUrl, entries) {
     }
   }
 
-  let total = 0;
+  let upserted = 0;
   for (let i = 0; i < unique.length; i += BATCH_SIZE) {
     const batch = unique.slice(i, i + BATCH_SIZE);
     const placeholders = [];
@@ -189,10 +189,40 @@ async function upsertEntries(databaseUrl, entries) {
          api_version = EXCLUDED.api_version`,
       params,
     );
-    total += batch.length;
+    upserted += batch.length;
   }
 
-  return total;
+  return { upserted, unique };
+}
+
+/**
+ * Per-chunk differential delete: drop entries in [chunkStart, chunkEnd) whose
+ * source_id is missing from the just-fetched Reports response. This keeps
+ * raw_toggl_track__time_entries_report in sync with Toggl's authoritative
+ * state; without it, entries the user later deleted would silently linger.
+ */
+async function differentialDeleteReport(databaseUrl, chunkStart, chunkEnd, presentSourceIds) {
+  // Guard: an empty response is far more often a transient API blip than
+  // "user deleted everything in this 1-year window". Skip diff-delete to
+  // avoid catastrophic data loss; the next run will catch up.
+  if (presentSourceIds.length === 0) {
+    return 0;
+  }
+
+  const placeholders = presentSourceIds.map((_, i) => `$${i + 3}`).join(',');
+  const params = [`${chunkStart}T00:00:00Z`, `${chunkEnd}T00:00:00Z`, ...presentSourceIds];
+  const presentClause = `AND source_id NOT IN (${placeholders})`;
+
+  const result = await neonSql(
+    databaseUrl,
+    `DELETE FROM data_warehouse.raw_toggl_track__time_entries_report
+     WHERE (data->>'start')::timestamptz >= ($1)::timestamptz
+       AND (data->>'start')::timestamptz <  ($2)::timestamptz
+       AND synced_at < now() - interval '5 minutes'
+       ${presentClause}`,
+    params,
+  );
+  return result.rowCount ?? 0;
 }
 
 // ---- main -----------------------------------------------------------------
@@ -224,25 +254,35 @@ async function main() {
   const chunks = splitDateRange(start, end, CHUNK_DAYS);
   console.log(`Split into ${chunks.length} chunk(s) of up to ${CHUNK_DAYS} days`);
 
-  let total = 0;
+  let totalUpserted = 0;
+  let totalReportDeleted = 0;
   for (const chunk of chunks) {
     const t0 = Date.now();
     const entries = await fetchAllDetailedReport(workspaceId, auth, chunk.start, chunk.end);
     const t1 = Date.now();
-    const upserted = await upsertEntries(databaseUrl, entries);
+    const { upserted, unique } = await upsertEntries(databaseUrl, entries);
     const t2 = Date.now();
+    const reportDeleted = await differentialDeleteReport(
+      databaseUrl,
+      chunk.start,
+      chunk.end,
+      unique.map((u) => u.sourceId),
+    );
+    const t3 = Date.now();
     console.log(
       `  ${chunk.start}..${chunk.end}: fetched=${entries.length} upserted=${upserted} ` +
-      `fetch=${((t1 - t0) / 1000).toFixed(1)}s db=${((t2 - t1) / 1000).toFixed(1)}s`
+      `report-deleted=${reportDeleted} ` +
+      `fetch=${((t1 - t0) / 1000).toFixed(1)}s db=${((t3 - t1) / 1000).toFixed(1)}s`
     );
-    total += upserted;
+    totalUpserted += upserted;
+    totalReportDeleted += reportDeleted;
   }
 
-  console.log(`Done. Total upserted: ${total}`);
+  console.log(`Done. Upserted=${totalUpserted}, report-deleted=${totalReportDeleted}`);
   console.log(`API requests used: ${apiRequestCount} (Toggl rate limit: 30/h)`);
 
-  const deleted = await cleanupStaleTrackEntries(databaseUrl, start, end);
-  console.log(`Cleanup: removed ${deleted} stale track entries (deleted in Toggl, no longer in Reports)`);
+  const trackDeleted = await cleanupStaleTrackEntries(databaseUrl, start, end);
+  console.log(`Cross-table cleanup: removed ${trackDeleted} stale track entries (deleted in Toggl)`);
 }
 
 // Remove track entries that no longer exist in Reports — i.e. user deleted them in Toggl.
