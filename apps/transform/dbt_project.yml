@@ -19,6 +19,9 @@ vars:
 
 models:
   dwh:
+    +persist_docs:
+      relation: true
+      columns: true
     staging:
       +materialized: view
     dimensions:
@@ -29,3 +32,9 @@ models:
     reports:
       +materialized: view
       +schema: data_presentation
+
+seeds:
+  dwh:
+    +persist_docs:
+      relation: true
+      columns: true

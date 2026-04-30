@@ -91,3 +91,27 @@ seeds:
       column_types:
         toggl_client_name: text
         time_category_social: text
+
+  - name: seed_tag_definitions
+    description: "Toggl tag semantic dictionary (curated)"
+    config:
+      column_types:
+        tag_name: text
+        semantic_ja: text
+        tag_family: text
+        measurement_purpose: text
+    columns:
+      - name: tag_name
+        data_tests: [unique, not_null]
+
+  - name: seed_project_definitions
+    description: "Toggl project semantic dictionary (curated)"
+    config:
+      column_types:
+        project_name: text
+        description_ja: text
+        typical_descriptions: text
+        examples: text
+    columns:
+      - name: project_name
+        data_tests: [unique, not_null]

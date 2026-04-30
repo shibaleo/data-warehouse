@@ -46,6 +46,11 @@ select
     )::integer as duration_seconds,
     description, project_name, project_color, tag_names,
     social_category, personal_category, coarse_personal_category,
-    social_order, personal_order, coarse_order, project_order, source
+    social_order, personal_order, coarse_order, project_order, source,
+    start_jst::date                              as jst_date,
+    extract(hour from start_jst)::smallint       as jst_hour,
+    extract(dow  from start_jst)::smallint       as jst_dow,
+    to_char(start_jst, 'Dy')                     as jst_dow_name,
+    extract(dow from start_jst) in (0, 6)        as is_weekend
 from split_records
 where start_jst < least(end_jst, (start_jst::date + interval '1 day')::timestamp)

@@ -1,0 +1,102 @@
+version: 2
+
+models:
+  - name: rpt_time_records_continuous
+    description: |
+      Toggl 時間記録の連続タイムライン (UTC timestamptz 保持)。
+      ギャップ補正と untracked 行生成を含む可視化用ビュー。日跨ぎは未分割。
+      日次集計には rpt_time_records_continuous_split を使うこと。
+    columns:
+      - name: id
+        description: "source_id をそのまま使った安定 ID（split 前なので 1 entry = 1 row）"
+      - name: source_id
+        description: "Toggl の time_entry_id。untracked 行は 'untracked_' prefix"
+      - name: start_at
+        description: "開始時刻 (UTC stored, timestamptz)"
+      - name: end_at
+        description: "終了時刻 (UTC stored, timestamptz)。in-progress エントリは current_timestamp で埋められる"
+      - name: duration_seconds
+        description: "end_at - start_at の秒数"
+      - name: description
+        description: "Toggl エントリの description（ユーザー入力）"
+      - name: project_name
+        description: "Toggl プロジェクト名。意味は dim_time_projects.description_ja を参照"
+      - name: project_color
+        description: "Toggl プロジェクトカラー (#hex)。personal_category 解決に使用"
+      - name: tag_names
+        description: "タグ名配列 (text[])。NULL ではなく空配列で正規化済み。意味は seed_tag_definitions を参照"
+      - name: social_category
+        description: "PRIMARY/SECONDARY/TERTIARY (生活活動分類)"
+      - name: personal_category
+        description: "個人定義の細分類（Vitals/Sleep/Work/Education/Drift など）"
+      - name: coarse_personal_category
+        description: "Essentials/Obligation/Leisure (3粒度の粗分類)"
+      - name: source
+        description: "'toggl_track' (実エントリ) または 'generated' (untracked 補完行)"
+
+  - name: rpt_time_records_continuous_split
+    description: |
+      時間使用分析の主軸ビュー。JST 24:00 で日跨ぎを分割したタイムライン。
+      個別エントリレベルの分析・週次/日次集計・曜日パターン分析の基本入力。
+
+      Gotchas:
+        - personal_category='Sleep' は JST 24:00 で物理分割される（同一セッションが連続2行）
+        - personal_category='Work' は Toggl 側でも昼休みで分割される（1営業日 ≒ AM/PM の 2 行）。
+          1日単位での Work 集計には rpt_work_sessions_jst を使うべき
+        - tag_names は NULL ではなく空配列で返る（COALESCE 済み）
+        - 日跨ぎ split の境界では end_at が翌日 00:00:00 ちょうど（境界の所属は次の行）
+    columns:
+      - name: id
+        description: "source_id || '_' || split_index"
+      - name: source_id
+        description: "元の Toggl time_entry_id（split しても同一 ID を共有）"
+      - name: start_at
+        description: "開始時刻 (UTC stored, timestamptz)"
+      - name: end_at
+        description: "終了時刻 (UTC stored, timestamptz)。日跨ぎ行では翌日 JST 00:00 ちょうど"
+      - name: duration_seconds
+        description: "split 後の各部分の秒数"
+      - name: description
+        description: "Toggl エントリの description (split しても同一)"
+      - name: project_name
+        description: "Toggl プロジェクト名。意味は dim_time_projects.description_ja を参照"
+      - name: tag_names
+        description: "タグ名配列 (text[])。空配列で正規化済み。現在は input/output のみ運用中"
+      - name: personal_category
+        description: "個人定義の細分類"
+      - name: coarse_personal_category
+        description: "Essentials/Obligation/Leisure"
+      - name: jst_date
+        description: "start_at の JST 日付 (date)。日次集計はこのカラムで GROUP BY するのが安全"
+      - name: jst_hour
+        description: "start_at の JST 時刻 (0-23, smallint)。曜日×時間帯のヒートマップ用"
+      - name: jst_dow
+        description: "start_at の JST 曜日 (0=Sun, 6=Sat, smallint)"
+      - name: jst_dow_name
+        description: "start_at の JST 曜日名 (Mon, Tue, ...)"
+      - name: is_weekend
+        description: "土日かどうか (boolean)。祝日は含まない"
+
+  - name: rpt_work_sessions_jst
+    description: |
+      Work カテゴリのエントリーを 1 営業日 = 1 行に再集約したビュー。
+      Toggl が昼休み等で物理分割したエントリーを業務認識単位に統合する。
+
+      使い方の例:
+        - 「平均勤務時間は何時間か」「定時退社できているか」を見るならこのビュー
+        - rpt_time_records_continuous_split で Work を見ると AM/PM の 2 行になり実態が掴みにくい
+    columns:
+      - name: jst_date
+        description: "JST 日付 (date)。Work エントリーがある日のみ存在"
+      - name: session_start_jst
+        description: "その日の最初の Work エントリーの開始時刻 (JST timestamp)"
+      - name: session_end_jst
+        description: "その日の最後の Work エントリーの終了時刻 (JST timestamp)"
+      - name: work_minutes
+        description: "実働分数 (sum of duration_seconds / 60)"
+      - name: break_minutes
+        description: "途中休憩の合計分数（session 全体の経過時間 - 実働分数）"
+      - name: entry_count
+        description: "その日の Work エントリー件数（通常 2: AM/PM）"
+      - name: project_names
+        description: "その日に紐づいたプロジェクト名の配列"

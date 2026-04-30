@@ -2,52 +2,91 @@ version: 2
 
 models:
   - name: fct_toggl_time_entries
-    description: "Toggl time entries with FK resolution. DCMP data source."
+    description: |
+      Toggl 時間記録の DCMP 公開 API（FK 解決済みファクト）。
+      ギャップ補正・合成行・split は行わない。in-progress エントリは除外。
+      可視化用途には rpt_time_records_continuous_split を使うこと。
     columns:
       - name: id
+        description: "md5(time_entry_id) を UUID 化した安定 ID。DCMP 連携用"
         data_tests: [unique, not_null]
       - name: source_id
+        description: "Toggl の time_entry_id (text)"
         data_tests: [not_null]
       - name: started_at
+        description: "開始時刻 (UTC stored, timestamptz)"
         data_tests: [not_null]
       - name: stopped_at
+        description: "終了時刻 (UTC stored, timestamptz)。in-progress は除外済み"
         data_tests: [not_null]
+      - name: duration_seconds
+        description: "Toggl 報告の duration"
+      - name: description
+        description: "ユーザー入力の description"
+      - name: project_id
+        description: "Toggl project_id (bigint)"
+      - name: project_name
+        description: "Toggl プロジェクト名"
+      - name: project_color
+        description: "Toggl プロジェクトカラー (#hex)"
+      - name: client_name
+        description: "Toggl クライアント名"
+      - name: tag_names
+        description: "タグ名配列 (text[])。空配列で正規化済み"
+      - name: personal_category
+        description: "個人定義の細分類（dim_category_time_personal 経由）"
+      - name: coarse_personal_category
+        description: "Essentials/Obligation/Leisure"
+      - name: social_category
+        description: "PRIMARY/SECONDARY/TERTIARY"
 
   - name: fct_health_sleep
     description: "Daily sleep fact from Fitbit (main sleep only, one row per sleep_date)"
     columns:
       - name: id
+        description: "Fitbit log_id from raw"
         data_tests: [not_null]
       - name: sleep_date
+        description: "睡眠日（一晩の代表日）。1日1行"
         data_tests: [unique, not_null]
       - name: start_at
+        description: "睡眠開始時刻 (UTC stored, timestamptz)"
         data_tests: [not_null]
       - name: duration_seconds
+        description: "睡眠長 (秒)"
         data_tests: [not_null]
 
   - name: fct_health_body
     description: "Daily body composition fact from Tanita Health Planet"
     columns:
       - name: id
+        description: "Tanita measurement ID"
         data_tests: [not_null]
       - name: measured_date
+        description: "計測日。1日1行に dedup 済み"
         data_tests: [unique, not_null]
       - name: weight
+        description: "体重 (kg)"
         data_tests: [not_null]
 
   - name: fct_zaim_transactions
     description: "Zaim transactions with category/genre/account names joined"
     columns:
       - name: id
+        description: "Zaim transaction id (UUID)"
         data_tests: [not_null]
       - name: source_id
+        description: "Zaim API ネイティブ ID"
         data_tests: [not_null]
       - name: mode
+        description: "income / payment / transfer"
         data_tests:
           - not_null
           - accepted_values:
               values: ['income', 'payment', 'transfer']
       - name: transaction_date
+        description: "取引日"
         data_tests: [not_null]
       - name: amount
+        description: "金額 (yen)"
         data_tests: [not_null]

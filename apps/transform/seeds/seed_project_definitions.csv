@@ -1,0 +1,15 @@
+project_name,description_ja,typical_descriptions,examples
+Drift,受動的な余暇・回復時間。意図的でない時間消費,"laze, video, masturbation, snacks, movie",ぼーっとする・動画視聴・スナック
+Close,家族や近しい人との時間,"family, friends, mother, father",家族との食事・近しい友人と過ごす
+Casual,軽いつながり・知人レベルの社交,"friends, partner, sns, LINE",友人とのカジュアルな交流・SNS
+Bookkeeping,簿記論の学習（仕訳・問題演習・暗記）,"ランダム復習, solve exercises, 過去問",簿記の問題演習・テーマ別演習
+Financial Statements,財務諸表論の学習（理論・制度会計）,"企業会計原則, 会社計算規則, 貸借対照表観",会計理論・制度会計の学習
+DWH+BI,個人データ基盤の構築・運用（このプロジェクト）,"supabase-sync-jobs, build dashboard, sync toggl data",DWHコネクタ開発・dbt変換・ダッシュボード
+MCPist,MCP 関連プロダクト開発（sprint 単位で進行）,"sprint-001..012, build dev sever, design go-mcp-dev",MCP サーバー実装・スプリント開発
+Reflection,内省・自己整理の時間,"reflection, journaling, meditation, organize thoughts",日記・瞑想・思考の整理
+Self Tracking,自己計測（体組成・血圧・記録）,"measure myself, measure blood pressure, measure body weight",朝の計測ルーティン
+Programming,個人プロジェクトの実装作業（学習・実験的開発）,"javascript, notion, vitepress, supabase",個人プロジェクトのコーディング
+Mathematics,数学（位相幾何・解析・代数等の自学）,"fourier analysis, algebra, fundamental group",数学書の読解・問題演習
+Senior Thesis,卒論研究（特異点理論）,"singularity theory, seminar with Prof. Honda",卒論執筆・指導教員とのゼミ
+Knowledge Management,ナレッジ管理基盤の整備,"build documentation environment",ドキュメント環境構築・整理
+長野日本ソフトウエア,本業の業務委託先（勤務日に該当）,"work",定時業務（昼休みで AM/PM に分割される）
