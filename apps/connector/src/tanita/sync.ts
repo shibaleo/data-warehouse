@@ -1,4 +1,5 @@
-// Tanita Health Planet data sync — body composition + blood pressure to Neon raw tables
+// Tanita Health Planet data sync — body composition + blood pressure
+// to data_warehouse_v2 raw tables (append-only).
 
 // ---------------------------------------------------------------------------
 // Body Composition (weight, body fat %)
@@ -27,8 +28,7 @@ function syncTanitaBodyComposition(days: number = 30): void {
     },
   }));
 
-  upsertRaw('raw_tanita_health_planet__body_composition', records, 'v1');
-  log(`Tanita body composition: ${records.length} records`);
+  appendRaw('raw_tanita_health_planet__body_composition', records, 'v1');
 }
 
 // ---------------------------------------------------------------------------
@@ -59,8 +59,7 @@ function syncTanitaBloodPressure(days: number = 30): void {
     },
   }));
 
-  upsertRaw('raw_tanita_health_planet__blood_pressure', records, 'v1');
-  log(`Tanita blood pressure: ${records.length} records`);
+  appendRaw('raw_tanita_health_planet__blood_pressure', records, 'v1');
 }
 
 // ---------------------------------------------------------------------------

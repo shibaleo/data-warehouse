@@ -1,15 +1,12 @@
 -- Fitbit sleep staging model
--- Source: raw_fitbit__sleep (Fitbit Web API v1.2)
+-- Source: raw_fitbit__sleep_current (data_warehouse_v2, append-only)
 
 with source as (
-    select * from {{ source('raw_fitbit', 'raw_fitbit__sleep') }}
+    select * from {{ source('raw_fitbit', 'raw_fitbit__sleep_current') }}
 ),
 
 staged as (
     select
-        -- Primary key
-        id,
-
         -- Source identifier (log_id)
         source_id,
         source_id as log_id,
@@ -45,7 +42,7 @@ staged as (
         data->'levels' as levels,
 
         -- Audit
-        synced_at,
+        created_at as synced_at,
         api_version
 
     from source

@@ -1,4 +1,12 @@
-// Fitbit data sync — 8 data types to Neon raw tables
+// Fitbit data sync — 8 data types to data_warehouse_v2 raw tables (append-only).
+//
+// Each Fitbit endpoint has a stable per-day source_id (date or logId) and the
+// connector projects only the fields we care about, so content_hash is just
+// md5(data::text) (the 'at' field stripping is a no-op here, kept for code
+// symmetry with Toggl). No diff window is needed: Fitbit doesn't delete past
+// days, so a same-source_id record either appears unchanged (no-op) or with
+// updated values (new revision). Fullness changes (e.g. catching up partial
+// data) naturally produce a revision via the content_hash.
 
 // ---------------------------------------------------------------------------
 // Sleep
@@ -32,8 +40,7 @@ function syncFitbitSleep(days: number = 7): void {
     },
   }));
 
-  upsertRaw('raw_fitbit__sleep', records, 'v1.2');
-  log(`Fitbit sleep: ${records.length} records`);
+  appendRaw('raw_fitbit__sleep', records, 'v1.2');
 }
 
 // ---------------------------------------------------------------------------
@@ -71,8 +78,7 @@ function syncFitbitActivity(days: number = 7): void {
     };
   });
 
-  upsertRaw('raw_fitbit__activity', records, 'v1');
-  log(`Fitbit activity: ${records.length} records`);
+  appendRaw('raw_fitbit__activity', records, 'v1');
 }
 
 // ---------------------------------------------------------------------------
@@ -98,8 +104,7 @@ function syncFitbitHeartRate(days: number = 7): void {
     },
   }));
 
-  upsertRaw('raw_fitbit__heart_rate', records, 'v1');
-  log(`Fitbit heart rate: ${records.length} records`);
+  appendRaw('raw_fitbit__heart_rate', records, 'v1');
 }
 
 // ---------------------------------------------------------------------------
@@ -125,8 +130,7 @@ function syncFitbitHrv(days: number = 7): void {
     },
   }));
 
-  upsertRaw('raw_fitbit__hrv', records, 'v1');
-  log(`Fitbit HRV: ${records.length} records`);
+  appendRaw('raw_fitbit__hrv', records, 'v1');
 }
 
 // ---------------------------------------------------------------------------
@@ -153,8 +157,7 @@ function syncFitbitSpo2(days: number = 7): void {
     },
   }));
 
-  upsertRaw('raw_fitbit__spo2', records, 'v1');
-  log(`Fitbit SpO2: ${records.length} records`);
+  appendRaw('raw_fitbit__spo2', records, 'v1');
 }
 
 // ---------------------------------------------------------------------------
@@ -179,8 +182,7 @@ function syncFitbitBreathingRate(days: number = 7): void {
     },
   }));
 
-  upsertRaw('raw_fitbit__breathing_rate', records, 'v1');
-  log(`Fitbit breathing rate: ${records.length} records`);
+  appendRaw('raw_fitbit__breathing_rate', records, 'v1');
 }
 
 // ---------------------------------------------------------------------------
@@ -225,8 +227,7 @@ function syncFitbitCardioScore(days: number = 7): void {
     };
   });
 
-  upsertRaw('raw_fitbit__cardio_score', records, 'v1');
-  log(`Fitbit cardio score: ${records.length} records`);
+  appendRaw('raw_fitbit__cardio_score', records, 'v1');
 }
 
 // ---------------------------------------------------------------------------
@@ -252,8 +253,7 @@ function syncFitbitTemperatureSkin(days: number = 7): void {
     },
   }));
 
-  upsertRaw('raw_fitbit__temperature_skin', records, 'v1');
-  log(`Fitbit temperature skin: ${records.length} records`);
+  appendRaw('raw_fitbit__temperature_skin', records, 'v1');
 }
 
 // ---------------------------------------------------------------------------

@@ -23,7 +23,7 @@ accounts as (
 )
 
 select
-    m.id,
+    md5(m.source_id::text)::uuid as id,
     m.source_id,
     m.zaim_id,
     m.mode,

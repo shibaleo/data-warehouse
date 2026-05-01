@@ -1,20 +1,12 @@
 -- stg_zaim__account.sql
--- =============================================================================
--- Zaim account master staging model
--- Source: data_warehouse.raw_zaim__account (Zaim API v2)
---
--- Account types: wallet, bank account, credit card, e-money, etc.
---
--- Note: source_id (Zaim account id) でユニーク化
--- =============================================================================
+-- Source: raw_zaim__account_current (data_warehouse_v2, append-only)
 
 with source as (
-    select * from {{ source('raw_zaim', 'raw_zaim__account') }}
+    select * from {{ source('raw_zaim', 'raw_zaim__account_current') }}
 ),
 
 staged as (
     select
-        id,
         source_id,
         (data->>'id')::integer as account_id,
         data->>'name' as name,
@@ -24,7 +16,7 @@ staged as (
         (data->>'sort')::integer as sort_order,
         (data->>'active')::integer = 1 as is_active,
         (data->>'modified')::timestamptz as modified_at,
-        synced_at,
+        created_at as synced_at,
         api_version
     from source
 )

@@ -1,15 +1,12 @@
 -- Fitbit activity staging model
--- Source: raw_fitbit__activity (Fitbit Web API v1)
+-- Source: raw_fitbit__activity_current (data_warehouse_v2, append-only)
 
 with source as (
-    select * from {{ source('raw_fitbit', 'raw_fitbit__activity') }}
+    select * from {{ source('raw_fitbit', 'raw_fitbit__activity_current') }}
 ),
 
 staged as (
     select
-        -- Primary key
-        id,
-
         -- Source identifier (date)
         source_id,
         source_id::date as date,
@@ -39,7 +36,7 @@ staged as (
         data->'active_zone_minutes' as active_zone_minutes,
 
         -- Audit
-        synced_at,
+        created_at as synced_at,
         api_version
 
     from source

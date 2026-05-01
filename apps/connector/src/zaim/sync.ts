@@ -1,4 +1,11 @@
-// Zaim data sync — money, category, genre, account to Neon raw tables
+// Zaim data sync — money, category, genre, account to data_warehouse_v2
+// raw tables (append-only).
+//
+// Masters (category / genre / account) carry an upstream `modified` field;
+// it stays stable unless the user actually edits the master, so it is part
+// of content_hash. Same for money's `created` field. No diff-tombstone is
+// configured — Zaim deletions in the past 30 days are rare enough that
+// catching them eventually (next time the user runs a full re-sync) is OK.
 
 const ZAIM_API_VERSION = 'v2';
 
@@ -41,8 +48,7 @@ function syncZaimMoney(days: number = 30): void {
     },
   }));
 
-  upsertRaw('raw_zaim__money', records, ZAIM_API_VERSION);
-  log(`Zaim money: ${records.length} records`);
+  appendRaw('raw_zaim__money', records, ZAIM_API_VERSION);
 }
 
 /** Full sync — fetch all money records from 2020-01-01 */
@@ -79,8 +85,7 @@ function syncZaimMoneyAll(): void {
     },
   }));
 
-  upsertRaw('raw_zaim__money', records, ZAIM_API_VERSION);
-  log(`Zaim money (all): ${records.length} records`);
+  appendRaw('raw_zaim__money', records, ZAIM_API_VERSION);
 }
 
 // ---------------------------------------------------------------------------
@@ -106,8 +111,7 @@ function syncZaimCategory(): void {
     },
   }));
 
-  upsertRaw('raw_zaim__category', records, ZAIM_API_VERSION);
-  log(`Zaim categories: ${records.length} records`);
+  appendRaw('raw_zaim__category', records, ZAIM_API_VERSION, { fullTable: true });
 }
 
 // ---------------------------------------------------------------------------
@@ -133,8 +137,7 @@ function syncZaimGenre(): void {
     },
   }));
 
-  upsertRaw('raw_zaim__genre', records, ZAIM_API_VERSION);
-  log(`Zaim genres: ${records.length} records`);
+  appendRaw('raw_zaim__genre', records, ZAIM_API_VERSION, { fullTable: true });
 }
 
 // ---------------------------------------------------------------------------
@@ -161,8 +164,7 @@ function syncZaimAccount(): void {
     },
   }));
 
-  upsertRaw('raw_zaim__account', records, ZAIM_API_VERSION);
-  log(`Zaim accounts: ${records.length} records`);
+  appendRaw('raw_zaim__account', records, ZAIM_API_VERSION, { fullTable: true });
 }
 
 // ---------------------------------------------------------------------------

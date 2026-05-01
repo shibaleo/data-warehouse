@@ -4,7 +4,7 @@
 
 with sleep_records as (
     select
-        id,
+        md5(source_id::text)::uuid as id,
         source_id,
         date as sleep_date,
         start_time as start_at,

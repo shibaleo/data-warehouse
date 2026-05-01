@@ -1,29 +1,18 @@
 -- Fitbit skin temperature staging model
--- Source: raw_fitbit__temperature_skin (Fitbit Web API v1)
+-- Source: raw_fitbit__temperature_skin_current (data_warehouse_v2, append-only)
 
 with source as (
-    select * from {{ source('raw_fitbit', 'raw_fitbit__temperature_skin') }}
+    select * from {{ source('raw_fitbit', 'raw_fitbit__temperature_skin_current') }}
 ),
 
 staged as (
     select
-        -- Primary key
-        id,
-
-        -- Source identifier (date)
         source_id,
         source_id::date as date,
-
-        -- Temperature metrics (relative to baseline)
         (data->>'nightly_relative')::numeric as nightly_relative,
-
-        -- Log type
         data->>'log_type' as log_type,
-
-        -- Audit
-        synced_at,
+        created_at as synced_at,
         api_version
-
     from source
 )
 

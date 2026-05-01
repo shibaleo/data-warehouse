@@ -17,7 +17,7 @@ deduplicated as (
 )
 
 select
-    id,
+    md5(source_id::text)::uuid as id,
     source_id,
     measured_at,
     measured_at::date as measured_date,
