@@ -1,10 +1,10 @@
-// Toggl Track time entries synchronization (Track API v9)
+// Toggl Track time entries synchronization (Track API v9, append-only)
 //
-// Differential delete is window-scoped: any entry in [startDate, endDate)
-// whose source_id no longer comes back from the API is removed from raw.
-// In-progress entries (stop IS NULL) are protected — Track v9 returns those
-// as part of the live state and we don't want to delete them on transient
-// API quirks.
+// Differential delete becomes a tombstone INSERT under append-only: any
+// entry in [startDate, endDate) whose source_id no longer comes back from
+// the API gets a deleted=true revision appended. In-progress entries
+// (stop IS NULL) are protected — Track v9 returns those as live state and
+// transient API quirks should not flip them to "deleted".
 
 interface SyncTimeEntriesOptions {
   days?: number;
@@ -25,7 +25,7 @@ function syncTimeEntries(options: SyncTimeEntriesOptions = {}): void {
   const entries = fetchTimeEntries(startDate, endDate) || [];
   const records = toRawRecords(entries);
 
-  upsertRaw('raw_toggl_track__time_entries', records, 'v9', {
+  appendRaw('raw_toggl_track__time_entries', records, 'v9', {
     dateField: 'start',
     start: `${startDate}T00:00:00Z`,
     end: `${endDate}T00:00:00Z`,

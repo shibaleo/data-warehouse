@@ -1,9 +1,8 @@
 #!/usr/bin/env node
-// Local one-off re-sync of Toggl Reports API v3 → raw_toggl_track__time_entries_report.
-//
-// Mirrors apps/connector/src/toggl/sync-time-entries-report.ts but runs locally
-// without the GAS 6-minute limit. The daily/hourly Track API v9 sync continues
-// to run in GAS — this script only refreshes historical Reports API v3 data.
+// Local one-off re-sync of Toggl Reports API v3 → data_warehouse_v2
+// (append-only). Mirrors the GAS appendRaw / cleanupStaleTrackEntries
+// behaviour so manual full-history resyncs and the scheduled weekly sync
+// produce identical raw state.
 //
 // Usage:
 //   node scripts/resync-toggl-report.mjs [START] [END]
@@ -14,13 +13,17 @@
 // Toggl rate limit: 30 req/h. The script minimises requests by:
 //   - PAGE_SIZE = 1000 (highest value Toggl Reports API v3 has accepted in practice)
 //   - CHUNK_DAYS = 365 (largest range Toggl accepts per detailed-report query)
-//   - Inter-page pause = 100ms (quota is per-hour, so bursting within seconds is fine
-//     but a small pause keeps server-side queueing healthy)
+//   - Inter-page pause = 100ms
 // Total cost for full 2.5-year resync ≈ 18 requests (well under quota).
 //
-// After Reports sync completes, the script also removes track entries (Track API v9
-// snapshot) that no longer exist in Reports — i.e. the user deleted them in Toggl.
-// In-progress entries are protected (Reports never returns those by API design).
+// Append-only semantics:
+//   - Each chunk: append a new revision only when md5((data - 'at')::text)
+//     differs from the latest revision (DB-side hashing for parity with
+//     migration 007). Unchanged content is a no-op.
+//   - Per-chunk diff-tombstone: source_ids missing from the just-fetched
+//     response get a deleted=true revision appended.
+//   - Cross-table cleanup: tombstone Track v9 rows whose deletion the
+//     Reports authority has just confirmed.
 
 import { readFileSync } from 'node:fs';
 import { dirname, resolve } from 'node:path';
@@ -31,6 +34,7 @@ const PAGE_SIZE = 1000;
 const RATE_LIMIT_MS = 100;
 const CHUNK_DAYS = 365;
 const BATCH_SIZE = 100;
+const RAW_SCHEMA = 'data_warehouse_v2';
 
 let apiRequestCount = 0;
 
@@ -75,7 +79,7 @@ function sleep(ms) {
   return new Promise((r) => setTimeout(r, ms));
 }
 
-// ---- Neon SQL over HTTP (same endpoint pattern as apps/connector/lib/neon-client.ts) ----
+// ---- Neon SQL over HTTP ---------------------------------------------------
 
 async function neonSql(databaseUrl, query, params = []) {
   const m = databaseUrl.match(/@([^:/]+)/);
@@ -152,10 +156,66 @@ async function fetchAllDetailedReport(workspaceId, auth, startDate, endDate) {
   return all;
 }
 
-// ---- Upsert (idempotent ON CONFLICT) --------------------------------------
+// ---- Append-only writes ---------------------------------------------------
 
-async function upsertEntries(databaseUrl, entries) {
-  if (entries.length === 0) return { upserted: 0, unique: [] };
+/**
+ * Append a new revision per record only when the content hash differs from
+ * the latest, or the latest is a tombstone. Unchanged content is a no-op.
+ */
+async function appendBatch(databaseUrl, tableName, batch, apiVersion) {
+  if (batch.length === 0) return 0;
+
+  const placeholders = [];
+  const params = [];
+  let p = 1;
+  for (const r of batch) {
+    placeholders.push(`($${p}, $${p + 1}::jsonb, $${p + 2})`);
+    params.push(r.sourceId, JSON.stringify(r.data), apiVersion);
+    p += 3;
+  }
+
+  const sql = `
+    WITH input(source_id, data, api_version) AS (
+      VALUES ${placeholders.join(',')}
+    ),
+    input_hashed AS (
+      SELECT source_id, data, api_version, md5((data - 'at')::text) AS new_hash
+      FROM input
+    ),
+    latest AS (
+      SELECT DISTINCT ON (source_id) source_id, revision, content_hash, deleted
+      FROM ${RAW_SCHEMA}.${tableName}
+      WHERE source_id IN (SELECT source_id FROM input)
+      ORDER BY source_id, revision DESC
+    ),
+    inserted AS (
+      INSERT INTO ${RAW_SCHEMA}.${tableName}
+        (source_id, revision, data, content_hash, deleted, purged, api_version)
+      SELECT
+        i.source_id,
+        COALESCE(l.revision, 0) + 1,
+        i.data,
+        i.new_hash,
+        false,
+        false,
+        i.api_version
+      FROM input_hashed i
+      LEFT JOIN latest l ON l.source_id = i.source_id
+      WHERE l.source_id IS NULL
+         OR l.deleted = true
+         OR l.content_hash IS DISTINCT FROM i.new_hash
+      RETURNING 1
+    )
+    SELECT count(*) AS appended FROM inserted
+  `;
+
+  const result = await neonSql(databaseUrl, sql, params);
+  if (!result.rows || result.rows.length === 0) return 0;
+  return parseInt(String(result.rows[0][0]), 10) || 0;
+}
+
+async function appendEntries(databaseUrl, entries) {
+  if (entries.length === 0) return { appended: 0, unique: [] };
 
   const seen = new Set();
   const unique = [];
@@ -167,62 +227,88 @@ async function upsertEntries(databaseUrl, entries) {
     }
   }
 
-  let upserted = 0;
+  let appended = 0;
   for (let i = 0; i < unique.length; i += BATCH_SIZE) {
     const batch = unique.slice(i, i + BATCH_SIZE);
-    const placeholders = [];
-    const params = [];
-    let p = 1;
-    for (const r of batch) {
-      placeholders.push(`($${p}, $${p + 1}::jsonb, now(), $${p + 2})`);
-      params.push(r.sourceId, JSON.stringify(r.data), 'v3');
-      p += 3;
-    }
-    await neonSql(
+    appended += await appendBatch(
       databaseUrl,
-      `INSERT INTO data_warehouse.raw_toggl_track__time_entries_report
-         (source_id, data, synced_at, api_version)
-       VALUES ${placeholders.join(',')}
-       ON CONFLICT (source_id) DO UPDATE SET
-         data = EXCLUDED.data,
-         synced_at = EXCLUDED.synced_at,
-         api_version = EXCLUDED.api_version`,
-      params,
+      'raw_toggl_track__time_entries_report',
+      batch,
+      'v3',
     );
-    upserted += batch.length;
   }
 
-  return { upserted, unique };
+  return { appended, unique };
 }
 
 /**
- * Per-chunk differential delete: drop entries in [chunkStart, chunkEnd) whose
- * source_id is missing from the just-fetched Reports response. This keeps
- * raw_toggl_track__time_entries_report in sync with Toggl's authoritative
- * state; without it, entries the user later deleted would silently linger.
+ * Per-chunk diff-tombstone on Reports table: source_ids in the window that
+ * are still "live" but missing from the just-fetched response get a
+ * deleted=true revision appended.
  */
-async function differentialDeleteReport(databaseUrl, chunkStart, chunkEnd, presentSourceIds) {
-  // Guard: an empty response is far more often a transient API blip than
-  // "user deleted everything in this 1-year window". Skip diff-delete to
-  // avoid catastrophic data loss; the next run will catch up.
-  if (presentSourceIds.length === 0) {
-    return 0;
-  }
+async function tombstoneMissingReport(databaseUrl, chunkStart, chunkEnd, presentSourceIds) {
+  // Empty response = transient blip, not wholesale deletion. Skip.
+  if (presentSourceIds.length === 0) return 0;
 
   const placeholders = presentSourceIds.map((_, i) => `$${i + 3}`).join(',');
   const params = [`${chunkStart}T00:00:00Z`, `${chunkEnd}T00:00:00Z`, ...presentSourceIds];
-  const presentClause = `AND source_id NOT IN (${placeholders})`;
 
-  const result = await neonSql(
-    databaseUrl,
-    `DELETE FROM data_warehouse.raw_toggl_track__time_entries_report
-     WHERE (data->>'start')::timestamptz >= ($1)::timestamptz
-       AND (data->>'start')::timestamptz <  ($2)::timestamptz
-       AND synced_at < now() - interval '5 minutes'
-       ${presentClause}`,
-    params,
-  );
-  return result.rowCount ?? 0;
+  const sql = `
+    WITH targets AS (
+      SELECT cur.source_id, cur.data, cur.content_hash, cur.revision
+      FROM ${RAW_SCHEMA}.raw_toggl_track__time_entries_report_current cur
+      WHERE (cur.data->>'start')::timestamptz >= ($1)::timestamptz
+        AND (cur.data->>'start')::timestamptz <  ($2)::timestamptz
+        AND cur.created_at < now() - interval '5 minutes'
+        AND cur.source_id NOT IN (${placeholders})
+    ),
+    tombstoned AS (
+      INSERT INTO ${RAW_SCHEMA}.raw_toggl_track__time_entries_report
+        (source_id, revision, data, content_hash, deleted, purged, api_version)
+      SELECT t.source_id, t.revision + 1, t.data, t.content_hash, true, false, 'v3'
+      FROM targets t
+      RETURNING 1
+    )
+    SELECT count(*) AS tombstoned FROM tombstoned
+  `;
+
+  const result = await neonSql(databaseUrl, sql, params);
+  if (!result.rows || result.rows.length === 0) return 0;
+  return parseInt(String(result.rows[0][0]), 10) || 0;
+}
+
+/**
+ * Cross-table cleanup: tombstone Track v9 rows whose source_id is now
+ * confirmed missing from the freshly-synced Reports authority.
+ * In-progress rows (stop IS NULL) are protected.
+ */
+async function cleanupStaleTrackEntries(databaseUrl, startDate, endDate) {
+  const sql = `
+    WITH targets AS (
+      SELECT cur.source_id, cur.data, cur.content_hash, cur.revision
+      FROM ${RAW_SCHEMA}.raw_toggl_track__time_entries_current cur
+      WHERE (cur.data->>'start')::timestamptz >= ($1)::timestamptz
+        AND (cur.data->>'start')::timestamptz <  ($2)::timestamptz
+        AND (cur.data->>'stop') IS NOT NULL
+        AND cur.created_at < now() - interval '5 minutes'
+        AND NOT EXISTS (
+          SELECT 1 FROM ${RAW_SCHEMA}.raw_toggl_track__time_entries_report_current r
+          WHERE r.source_id = cur.source_id
+        )
+    ),
+    tombstoned AS (
+      INSERT INTO ${RAW_SCHEMA}.raw_toggl_track__time_entries
+        (source_id, revision, data, content_hash, deleted, purged, api_version)
+      SELECT t.source_id, t.revision + 1, t.data, t.content_hash, true, false, 'v9'
+      FROM targets t
+      RETURNING 1
+    )
+    SELECT count(*) AS tombstoned FROM tombstoned
+  `;
+
+  const result = await neonSql(databaseUrl, sql, [`${startDate}T00:00:00Z`, `${endDate}T00:00:00Z`]);
+  if (!result.rows || result.rows.length === 0) return 0;
+  return parseInt(String(result.rows[0][0]), 10) || 0;
 }
 
 // ---- main -----------------------------------------------------------------
@@ -239,7 +325,6 @@ async function main() {
 
   console.log(`Re-sync target: ${start} → ${end}`);
 
-  // Fetch Toggl credentials
   const credResult = await neonSql(
     databaseUrl,
     `SELECT access_token, metadata->>'workspace_id' AS workspace_id
@@ -254,15 +339,15 @@ async function main() {
   const chunks = splitDateRange(start, end, CHUNK_DAYS);
   console.log(`Split into ${chunks.length} chunk(s) of up to ${CHUNK_DAYS} days`);
 
-  let totalUpserted = 0;
-  let totalReportDeleted = 0;
+  let totalAppended = 0;
+  let totalReportTombstoned = 0;
   for (const chunk of chunks) {
     const t0 = Date.now();
     const entries = await fetchAllDetailedReport(workspaceId, auth, chunk.start, chunk.end);
     const t1 = Date.now();
-    const { upserted, unique } = await upsertEntries(databaseUrl, entries);
+    const { appended, unique } = await appendEntries(databaseUrl, entries);
     const t2 = Date.now();
-    const reportDeleted = await differentialDeleteReport(
+    const tombstoned = await tombstoneMissingReport(
       databaseUrl,
       chunk.start,
       chunk.end,
@@ -270,40 +355,19 @@ async function main() {
     );
     const t3 = Date.now();
     console.log(
-      `  ${chunk.start}..${chunk.end}: fetched=${entries.length} upserted=${upserted} ` +
-      `report-deleted=${reportDeleted} ` +
+      `  ${chunk.start}..${chunk.end}: fetched=${entries.length} appended=${appended} ` +
+      `tombstoned=${tombstoned} ` +
       `fetch=${((t1 - t0) / 1000).toFixed(1)}s db=${((t3 - t1) / 1000).toFixed(1)}s`
     );
-    totalUpserted += upserted;
-    totalReportDeleted += reportDeleted;
+    totalAppended += appended;
+    totalReportTombstoned += tombstoned;
   }
 
-  console.log(`Done. Upserted=${totalUpserted}, report-deleted=${totalReportDeleted}`);
+  console.log(`Done. Appended=${totalAppended}, report-tombstoned=${totalReportTombstoned}`);
   console.log(`API requests used: ${apiRequestCount} (Toggl rate limit: 30/h)`);
 
-  const trackDeleted = await cleanupStaleTrackEntries(databaseUrl, start, end);
-  console.log(`Cross-table cleanup: removed ${trackDeleted} stale track entries (deleted in Toggl)`);
-}
-
-// Remove track entries that no longer exist in Reports — i.e. user deleted them in Toggl.
-// In-progress entries (stop IS NULL) are protected: Reports never returns those by design.
-// A 5-minute grace on synced_at protects against just-created entries that Reports has not seen yet.
-async function cleanupStaleTrackEntries(databaseUrl, startDate, endDate) {
-  const result = await neonSql(
-    databaseUrl,
-    `DELETE FROM data_warehouse.raw_toggl_track__time_entries t
-     WHERE (t.data->>'start')::timestamptz >= ($1)::timestamptz
-       AND (t.data->>'start')::timestamptz <  ($2)::timestamptz
-       AND (t.data->>'stop') IS NOT NULL
-       AND (t.data->>'duration')::bigint > 0
-       AND t.synced_at < now() - interval '5 minutes'
-       AND NOT EXISTS (
-         SELECT 1 FROM data_warehouse.raw_toggl_track__time_entries_report r
-         WHERE r.source_id = t.source_id
-       )`,
-    [`${startDate}T00:00:00Z`, `${endDate}T00:00:00Z`],
-  );
-  return result.rowCount ?? 0;
+  const trackTombstoned = await cleanupStaleTrackEntries(databaseUrl, start, end);
+  console.log(`Cross-table cleanup: tombstoned ${trackTombstoned} stale track entries`);
 }
 
 main().catch((err) => {

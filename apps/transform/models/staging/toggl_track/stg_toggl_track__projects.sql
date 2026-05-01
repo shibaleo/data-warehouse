@@ -1,10 +1,9 @@
 with source as (
-    select * from {{ source('raw_toggl_track', 'raw_toggl_track__projects') }}
+    select * from {{ source('raw_toggl_track', 'raw_toggl_track__projects_current') }}
 ),
 
 staged as (
     select
-        id,
         source_id::bigint as project_id,
         (data->>'workspace_id')::bigint as workspace_id,
         (data->>'client_id')::bigint as client_id,
@@ -16,7 +15,7 @@ staged as (
         (data->>'created_at')::timestamptz as created_at,
         (data->>'at')::timestamptz as updated_at,
         (data->>'server_deleted_at')::timestamptz as archived_at,
-        synced_at,
+        created_at as synced_at,
         api_version
     from source
 )

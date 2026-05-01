@@ -1,11 +1,12 @@
-// Toggl Track time entries synchronization via Reports API v3.
+// Toggl Track time entries synchronization via Reports API v3 (append-only).
 //
-// Two cleanup layers:
-//   1. Per-chunk differential delete on raw_toggl_track__time_entries_report —
-//      catches entries deleted upstream within each chunk's date range
-//   2. Cross-table cleanup on raw_toggl_track__time_entries — catches Track v9
-//      orphans that Track's narrow daily window cannot detect on its own
-//      (e.g. user deletes an entry 5 days after it was first synced)
+// Two cleanup layers, both implemented as tombstone INSERTs under append-only:
+//   1. Per-chunk diff-tombstone on raw_toggl_track__time_entries_report —
+//      catches entries deleted upstream within each chunk's date range.
+//   2. Cross-table cleanup on raw_toggl_track__time_entries — appends
+//      tombstones for Track v9 orphans that Track's narrow daily window
+//      cannot detect on its own (e.g. user deletes an entry 5 days after
+//      it was first synced).
 
 interface SyncReportOptions {
   days?: number;
@@ -40,7 +41,7 @@ function syncTimeEntriesReport(options: SyncReportOptions = {}): void {
       }
     }
 
-    upsertRaw('raw_toggl_track__time_entries_report', unique, 'v3', {
+    appendRaw('raw_toggl_track__time_entries_report', unique, 'v3', {
       dateField: 'start',
       start: `${chunk.start}T00:00:00Z`,
       end: `${chunk.end}T00:00:00Z`,
@@ -49,8 +50,8 @@ function syncTimeEntriesReport(options: SyncReportOptions = {}): void {
     });
   }
 
-  // Catch-all: drop track-only entries that have already been confirmed
-  // deleted by the just-refreshed Reports authority.
+  // Catch-all: tombstone any track entry that the just-refreshed Reports
+  // authority confirms is gone.
   cleanupStaleTrackEntries(startDate, endDate);
 
   log('Report sync complete');
@@ -75,30 +76,40 @@ function splitDateRange(start: string, end: string, maxDays: number): { start: s
 }
 
 /**
- * Cross-table cleanup: remove track entries (Track API v9 raw) whose
- * source_id is missing from Reports. Track v9 daily sync uses a narrow
- * window (1-3 days) so deletions older than that aren't caught by Track's
- * own differential delete; this sweep, run after the weekly Reports sync,
- * handles the gap.
+ * Cross-table cleanup: append a tombstone for any Track v9 raw row that is
+ * still "live" (latest revision deleted=false) but whose source_id is
+ * absent from the freshly-synced Reports authority.
  *
- * In-progress entries are protected: Reports never returns those by API
- * design, so absence is not deletion.
+ * In-progress entries (stop IS NULL) are protected: Reports never returns
+ * those by API design, so absence is not deletion.
  */
 function cleanupStaleTrackEntries(startDate: string, endDate: string): void {
   const result = neonQuery(
-    `DELETE FROM data_warehouse.raw_toggl_track__time_entries t
-     WHERE (t.data->>'start')::timestamptz >= ($1)::timestamptz
-       AND (t.data->>'start')::timestamptz <  ($2)::timestamptz
-       AND (t.data->>'stop') IS NOT NULL
-       AND (t.data->>'duration')::bigint > 0
-       AND t.synced_at < now() - interval '5 minutes'
-       AND NOT EXISTS (
-         SELECT 1 FROM data_warehouse.raw_toggl_track__time_entries_report r
-         WHERE r.source_id = t.source_id
-       )`,
+    `WITH targets AS (
+       SELECT cur.source_id, cur.data, cur.content_hash, cur.revision
+       FROM data_warehouse_v2.raw_toggl_track__time_entries_current cur
+       WHERE (cur.data->>'start')::timestamptz >= ($1)::timestamptz
+         AND (cur.data->>'start')::timestamptz <  ($2)::timestamptz
+         AND (cur.data->>'stop') IS NOT NULL
+         AND cur.created_at < now() - interval '5 minutes'
+         AND NOT EXISTS (
+           SELECT 1 FROM data_warehouse_v2.raw_toggl_track__time_entries_report_current r
+           WHERE r.source_id = cur.source_id
+         )
+     ),
+     tombstones AS (
+       INSERT INTO data_warehouse_v2.raw_toggl_track__time_entries
+         (source_id, revision, data, content_hash, deleted, purged, api_version)
+       SELECT t.source_id, t.revision + 1, t.data, t.content_hash, true, false, 'v9'
+       FROM targets t
+       RETURNING 1
+     )
+     SELECT count(*) AS tombstoned FROM tombstones`,
     [`${startDate}T00:00:00Z`, `${endDate}T00:00:00Z`],
-  ) as { rowCount?: number; rows?: unknown[] };
+  ) as { rows?: unknown[][] };
 
-  const deleted = result.rowCount ?? (result.rows ? result.rows.length : 0);
-  log(`Cleanup: removed ${deleted} stale track entries (deleted in Toggl)`);
+  const tombstoned = result.rows && result.rows.length > 0
+    ? parseInt(String(result.rows[0][0]), 10) || 0
+    : 0;
+  log(`Cross-table cleanup: tombstoned ${tombstoned} stale track entries`);
 }

@@ -1,10 +1,9 @@
 with source as (
-    select * from {{ source('raw_toggl_track', 'raw_toggl_track__me') }}
+    select * from {{ source('raw_toggl_track', 'raw_toggl_track__me_current') }}
 ),
 
 staged as (
     select
-        id,
         source_id::bigint as user_id,
         data->>'email' as email,
         data->>'fullname' as full_name,
@@ -15,7 +14,7 @@ staged as (
         data->>'country_id' as country_id,
         (data->>'created_at')::timestamptz as created_at,
         (data->>'at')::timestamptz as updated_at,
-        synced_at,
+        created_at as synced_at,
         api_version
     from source
 )

@@ -1,6 +1,6 @@
 -- stg_toggl_track__time_entries.sql
--- Unified from Track API v9 + Reports API v3
--- Priority: report > track (for same time_entry_id)
+-- Unified from Track API v9 + Reports API v3 (current revisions only).
+-- Priority: report > track (for the same time_entry_id).
 
 with tags as (
     select tag_name, tag_id
@@ -14,7 +14,7 @@ projects as (
 
 -- Source 1: Reports API v3 (Primary)
 report_source as (
-    select * from {{ source('raw_toggl_track', 'raw_toggl_track__time_entries_report') }}
+    select * from {{ source('raw_toggl_track', 'raw_toggl_track__time_entries_report_current') }}
 ),
 
 report_entries as (
@@ -36,7 +36,7 @@ report_entries as (
         (rs.data->>'seconds')::bigint as duration_seconds,
         null::boolean as is_running,
         (rs.data->>'at')::timestamptz as updated_at,
-        rs.synced_at,
+        rs.created_at as synced_at,
         rs.api_version,
         'report' as data_source
     from report_source rs
@@ -45,7 +45,7 @@ report_entries as (
 
 -- Source 2: Track API v9
 track_source as (
-    select * from {{ source('raw_toggl_track', 'raw_toggl_track__time_entries') }}
+    select * from {{ source('raw_toggl_track', 'raw_toggl_track__time_entries_current') }}
 ),
 
 track_entries_with_tag_names as (
@@ -70,7 +70,7 @@ track_entries_with_tag_names as (
         end as duration_seconds,
         (data->>'duration')::bigint < 0 as is_running,
         (data->>'at')::timestamptz as updated_at,
-        synced_at,
+        created_at as synced_at,
         api_version
     from track_source
 ),

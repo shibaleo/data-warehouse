@@ -1,49 +1,57 @@
 version: 2
 
+# Sources point at the *_current views in data_warehouse_v2 (append-only).
+# Each *_current view returns the latest non-deleted, non-purged revision per
+# source_id, so downstream stg / dim / fct / rpt see the same shape they did
+# under the previous UPSERT-based raw schema.
+#
+# To query history (all revisions), reference the underlying base table
+# directly via raw SQL — these sources only expose the "current" projection.
+
 sources:
   - name: raw_toggl_track
-    description: "Toggl Track raw API responses"
-    schema: data_warehouse
+    description: "Toggl Track raw API responses (append-only, current projection)"
+    schema: data_warehouse_v2
     tables:
-      - name: raw_toggl_track__time_entries
-        description: "Toggl Track API v9 time entries (daily sync)"
+      - name: raw_toggl_track__time_entries_current
+        description: "Toggl Track API v9 time entries — latest revision per entry"
         columns:
-          - name: id
-            description: "Primary key (UUID)"
           - name: source_id
             description: "Toggl Track time entry ID"
+          - name: revision
+            description: "Append-only revision counter (1, 2, 3, …)"
           - name: data
             description: "Raw JSON response from Toggl Track API"
-          - name: synced_at
-            description: "Sync timestamp"
+          - name: content_hash
+            description: "md5((data - 'at')::text); identical hash means content unchanged"
+          - name: created_at
+            description: "When this revision was inserted (≈ first-observed timestamp for the current content)"
           - name: api_version
             description: "API version (v9)"
 
-      - name: raw_toggl_track__time_entries_report
-        description: "Toggl Reports API v3 time entries (full history)"
+      - name: raw_toggl_track__time_entries_report_current
+        description: "Toggl Reports API v3 time entries — latest revision per entry"
         columns:
-          - name: id
-            description: "Primary key (UUID)"
           - name: source_id
             description: "Toggl Track time entry ID"
           - name: data
             description: "Raw JSON response from Toggl Reports API"
-          - name: synced_at
-            description: "Sync timestamp"
+          - name: created_at
+            description: "When this revision was inserted"
           - name: api_version
             description: "API version (v3)"
 
-      - name: raw_toggl_track__projects
-        description: "Toggl Track projects"
-      - name: raw_toggl_track__clients
-        description: "Toggl Track clients"
-      - name: raw_toggl_track__tags
-        description: "Toggl Track tags"
-      - name: raw_toggl_track__workspaces
-        description: "Toggl Track workspaces"
-      - name: raw_toggl_track__users
-        description: "Toggl Track workspace users"
-      - name: raw_toggl_track__me
-        description: "Toggl Track current user profile"
-      - name: raw_toggl_track__groups
-        description: "Toggl Track workspace groups"
+      - name: raw_toggl_track__projects_current
+        description: "Toggl Track projects — latest revision"
+      - name: raw_toggl_track__clients_current
+        description: "Toggl Track clients — latest revision"
+      - name: raw_toggl_track__tags_current
+        description: "Toggl Track tags — latest revision"
+      - name: raw_toggl_track__workspaces_current
+        description: "Toggl Track workspaces — latest revision"
+      - name: raw_toggl_track__users_current
+        description: "Toggl Track workspace users — latest revision"
+      - name: raw_toggl_track__me_current
+        description: "Toggl Track current user profile — latest revision"
+      - name: raw_toggl_track__groups_current
+        description: "Toggl Track workspace groups — latest revision"

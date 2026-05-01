@@ -1,10 +1,9 @@
 with source as (
-    select * from {{ source('raw_toggl_track', 'raw_toggl_track__workspaces') }}
+    select * from {{ source('raw_toggl_track', 'raw_toggl_track__workspaces_current') }}
 ),
 
 staged as (
     select
-        id,
         source_id::bigint as workspace_id,
         data->>'name' as workspace_name,
         (data->>'premium')::boolean as is_premium,
@@ -18,7 +17,7 @@ staged as (
         (data->>'rounding')::integer as rounding,
         (data->>'rounding_minutes')::integer as rounding_minutes,
         (data->>'at')::timestamptz as updated_at,
-        synced_at,
+        created_at as synced_at,
         api_version
     from source
 )
