@@ -7,6 +7,39 @@
 // days, so a same-source_id record either appears unchanged (no-op) or with
 // updated values (new revision). Fullness changes (e.g. catching up partial
 // data) naturally produce a revision via the content_hash.
+//
+// Timezone handling: Fitbit returns naive datetime strings ("2026-05-05T23:32")
+// reflecting the user's account timezone setting. Storing them naive lets
+// PostgreSQL ::timestamptz cast misinterpret them as UTC, so the connector
+// completes the ISO 8601 by appending +09:00 (Asia/Tokyo, no DST) before
+// storage. See CLAUDE.md "時間データの必須ルール" for the rationale.
+
+const FITBIT_TZ_OFFSET = '+09:00';
+
+/** Complete a naive ISO 8601 datetime by appending the account timezone offset. */
+function withOffset(naive: string | null | undefined): string | null {
+  if (naive == null || naive === '') return null;
+  if (/(?:Z|[+\-]\d{2}:\d{2})$/.test(naive)) return naive;  // already has offset
+  return naive + FITBIT_TZ_OFFSET;
+}
+
+/** Walk Fitbit sleep `levels` and apply withOffset to every nested dateTime. */
+function fixSleepLevels(levels: unknown): unknown {
+  if (!levels || typeof levels !== 'object') return levels;
+  const obj = levels as Record<string, unknown>;
+  const fixed: Record<string, unknown> = { ...obj };
+  for (const key of ['data', 'shortData']) {
+    const arr = obj[key];
+    if (Array.isArray(arr)) {
+      fixed[key] = arr.map((entry: unknown) => {
+        if (!entry || typeof entry !== 'object') return entry;
+        const e = entry as Record<string, unknown>;
+        return { ...e, dateTime: withOffset(e['dateTime'] as string | undefined) };
+      });
+    }
+  }
+  return fixed;
+}
 
 // ---------------------------------------------------------------------------
 // Sleep
@@ -27,8 +60,8 @@ function syncFitbitSleep(days: number = 7): void {
     data: {
       log_id: String(s.logId),
       date: s.dateOfSleep,
-      start_time: s.startTime,
-      end_time: s.endTime,
+      start_time: withOffset(s.startTime),
+      end_time: withOffset(s.endTime),
       duration_ms: s.duration,
       efficiency: s.efficiency,
       is_main_sleep: s.isMainSleep,
@@ -36,7 +69,7 @@ function syncFitbitSleep(days: number = 7): void {
       minutes_awake: s.minutesAwake,
       time_in_bed: s.timeInBed,
       sleep_type: s.type,
-      levels: s.levels,
+      levels: fixSleepLevels(s.levels),
     },
   }));
 

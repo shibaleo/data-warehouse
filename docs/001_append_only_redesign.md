@@ -156,11 +156,15 @@ Phase 1 deploy 直後、`upsertRaw` を lib から削除したまま fitbit/tani
 
 教訓: lib の関数シグネチャを変える際は、grep で全 caller を洗い出してから変更を deploy する。今回のように旧名と新名を共存させる方が安全。
 
-### Phase 3: 解釈層の解体 (未着手)
+### Phase 3: 解釈層の解体 — **スキップ** (2026-05-01 決定)
 
-- [ ] dbt の `fct_*/rpt_*` を data_presentation から外す
-- [ ] `mst_time_targets.csv` 等 seed をアプリ側 (Supabase) に移行
-- [ ] data-warehouse は raw + stg のみに絞る
+DWH 側の `data_warehouse_v2.fct_*/rpt_*` は **deprecate by neglect** で放置する方針に変更。
+新アプリ側で独自の dim/fct/rpt を組み立てるので、既存 DWH 解釈層は使われなくなり次第自然に枯れる。
+明示的な migration は行わない (cost 高い割に得るものが少ない)。
+
+- ~~dbt の `fct_*/rpt_*` を data_presentation から外す~~
+- ~~`mst_time_targets.csv` 等 seed をアプリ側 (Supabase) に移行~~
+- ~~data-warehouse は raw + stg のみに絞る~~
 
 ### Phase 4: 新アプリ (time-goals) 着手 (未着手)
 
