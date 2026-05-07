@@ -6,6 +6,12 @@
 // of content_hash. Same for money's `created` field. No diff-tombstone is
 // configured — Zaim deletions in the past 30 days are rare enough that
 // catching them eventually (next time the user runs a full re-sync) is OK.
+//
+// Timezone handling: Zaim returns datetime fields ("2025-04-01 22:38:44")
+// reflecting the account-side JST setting without an explicit offset. Same
+// trap as Fitbit — see CLAUDE.md "時間データの必須ルール". The connector
+// completes the ISO string with withTokyoOffset() (lib/datetime.ts) before
+// storage so PostgreSQL ::timestamptz casts cleanly.
 
 const ZAIM_API_VERSION = 'v2';
 
@@ -43,7 +49,7 @@ function syncZaimMoney(days: number = 30): void {
       name: m.name,
       receipt_id: m.receipt_id,
       place: m.place,
-      created: m.created,
+      created: withTokyoOffset(m.created),
       currency_code: m.currency_code,
     },
   }));
@@ -80,7 +86,7 @@ function syncZaimMoneyAll(): void {
       name: m.name,
       receipt_id: m.receipt_id,
       place: m.place,
-      created: m.created,
+      created: withTokyoOffset(m.created),
       currency_code: m.currency_code,
     },
   }));
@@ -107,7 +113,7 @@ function syncZaimCategory(): void {
       sort: c.sort,
       parent_category_id: c.parent_category_id,
       active: c.active,
-      modified: c.modified,
+      modified: withTokyoOffset(c.modified),
     },
   }));
 
@@ -133,7 +139,7 @@ function syncZaimGenre(): void {
       active: g.active,
       category_id: g.category_id,
       parent_genre_id: g.parent_genre_id,
-      modified: g.modified,
+      modified: withTokyoOffset(g.modified),
     },
   }));
 
@@ -155,7 +161,7 @@ function syncZaimAccount(): void {
     data: {
       id: a.id,
       name: a.name,
-      modified: a.modified,
+      modified: withTokyoOffset(a.modified),
       sort: a.sort,
       active: a.active,
       local_id: a.local_id,
