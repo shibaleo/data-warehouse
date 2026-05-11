@@ -6,7 +6,22 @@
 //
 // Usage:
 //   node scripts/resync-toggl-report.mjs [START] [END]
-//   START / END: YYYY-MM-DD (defaults: 2023-11-01 to tomorrow UTC)
+//   START / END: YYYY-MM-DD (defaults: 2023-11-01 → tomorrow UTC, i.e. full history)
+//
+// Narrow the window to spend fewer requests. Examples:
+//   # Full history (~18 req, near the rate-limit ceiling)
+//   node scripts/resync-toggl-report.mjs
+//
+//   # Single month (~2 req) — useful after editing one entry in Toggl
+//   node scripts/resync-toggl-report.mjs 2026-02-01 2026-03-01
+//
+//   # Last two weeks (~1 req) — quick freshness check
+//   node scripts/resync-toggl-report.mjs 2026-04-28 2026-05-13
+//
+// The window only needs to cover the dates of edited / deleted entries.
+// Anything outside the chosen range is untouched in raw, so picking the
+// smallest range that contains your changes is the cheapest fix.
+//
 // Requires: DATABASE_URL in repo-root .env, Node 18+ (built-in fetch).
 // Zero npm deps.
 //
@@ -14,7 +29,9 @@
 //   - PAGE_SIZE = 1000 (highest value Toggl Reports API v3 has accepted in practice)
 //   - CHUNK_DAYS = 365 (largest range Toggl accepts per detailed-report query)
 //   - Inter-page pause = 100ms
-// Total cost for full 2.5-year resync ≈ 18 requests (well under quota).
+// Approximate cost: 1 request per ~1000 entries in the window, plus 1 per
+// 365-day chunk boundary. Full 2.5-year resync ≈ 18 req; a single month
+// is usually 1–3 req.
 //
 // Append-only semantics:
 //   - Each chunk: append a new revision only when md5((data - 'at')::text)
