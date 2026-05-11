@@ -40,6 +40,18 @@ Concise rules for working in this repo. For background and roadmap see
 
 旧 `data_warehouse.raw_*` (UPSERT 時代) は凍結中、2026-05-15 以降に DROP 予定。
 
+## 時点指定スナップショット — `raw_at(tbl, T)`
+
+「T 時点で raw がどう見えていたか」を取りたいとき：
+```sql
+SELECT * FROM data_warehouse_v2.raw_at('raw_zaim__money', '2026-04-01 00:00+09'::timestamptz)
+WHERE deleted = false AND purged = false;
+```
+
+- `T` 省略時は `now()`（=  `_current` view と同じ）
+- 全 raw テーブルが同形なので 1 関数で対応（テーブル追加時にも変更不要）
+- `<table>_current` view 群はこの関数を呼ぶ thin wrapper になっている (migration 012)
+
 ## dbt sources
 
 stg は **必ず `_current` view** を参照する。ベーステーブル（全 revision）を直接読まない。
