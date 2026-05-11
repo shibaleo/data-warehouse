@@ -126,6 +126,80 @@ ORDER BY は `id, valid_from DESC, revision DESC` で固定（retroactive 正し
 
 実装サンプルと検証クエリは `migrations/013_pattern2_bitemporal.sql` を参照。
 
+## CRUD factory — tombstone / purge
+
+raw / dim とも、テーブル作成後に対応する procedure を呼ぶと **per-table helper 関数群が自動生成**される。
+
+```sql
+-- raw 用
+CREATE TABLE data_warehouse_v2.raw_<service>__<entity> ( ... );
+CALL data_warehouse_v2.create_raw_functions('raw_<service>__<entity>');
+-- → <tbl>_tombstone(source_id), <tbl>_purge(source_id) が生える
+
+-- dim 用
+CREATE TABLE data_warehouse_v2.<dim_name> ( ... );
+CALL data_warehouse_v2.create_dim_functions('<dim_name>');
+-- → <tbl>_at(biz_t, tx_t), <tbl>_tombstone(id, valid_from), <tbl>_purge(id) が生える
+```
+
+### tombstone
+
+論理削除。`deleted=true` の新 revision を append（content は前 revision から carry-forward）。
+
+```sql
+SELECT data_warehouse_v2.raw_zaim__money_tombstone('abc123');                    -- raw
+SELECT data_warehouse_v2.example_dim_tombstone('uuid...', '2026-06-01+09'::tz);  -- dim, valid_from 指定可
+```
+
+### purge
+
+「無かったことにする」最終マーカー。`purged=true` の新 revision を append。CHECK で entity あたり 1 回限り。**物理削除は一切しない**（過去 revision はそのまま、padataload も維持）。GDPR 等で content 抹消が必要なら app 側で対応。
+
+```sql
+SELECT data_warehouse_v2.raw_zaim__money_purge('abc123');     -- raw
+SELECT data_warehouse_v2.example_dim_purge('uuid...');        -- dim
+```
+
+## append-only 強制（opt-in）
+
+table が "settled" になったら trigger を有効化、UPDATE / DELETE を DB レイヤーでブロック：
+
+```sql
+CALL data_warehouse_v2.enable_append_only_protection('raw_zaim__money');
+```
+
+外す必要が出たら明示的に `DROP TRIGGER` を migration として記録（migration history で意図を残すため）。
+
+## Tests (pgtap)
+
+invariant の自動検証は `migrations/tests/*.sql` を `psql -f` で実行。CI 用：
+
+```bash
+# 個別
+psql -f migrations/tests/append_only_invariant.sql
+psql -f migrations/tests/dim_at_retroactive.sql
+psql -f migrations/tests/purge_uniqueness.sql
+
+# pg_prove 経由で一括
+pg_prove -h <host> -U <user> -d <db> migrations/tests/*.sql
+```
+
+dbt test は data quality（unique / not null）のみ。invariant 系は pgtap。
+
+## Config
+
+`public.dwh_config(key, value)` テーブル + `public.dwh_cfg(key)` 関数で集中管理。
+schema 名 / hash algorithm 等のグローバル設定はここ参照。
+
+```sql
+SELECT public.dwh_cfg('schema_name');  -- → 'data_warehouse_v2'
+```
+
+新たな key を追加するなら：
+```sql
+INSERT INTO public.dwh_config (key, value) VALUES ('my_key', 'my_value');
+```
+
 ## dbt sources
 
 stg は **必ず `_current` view** を参照する。ベーステーブル（全 revision）を直接読まない。
