@@ -1,13 +1,11 @@
 version: 2
 
-# Append-only raw layer: stg reads from *_current views.
-
 sources:
   - name: raw_tanita_health_planet
-    description: "Tanita Health Planet API raw responses (append-only, current projection)"
+    description: "Tanita Health Planet API raw responses (append-only base tables)"
     schema: data_warehouse_v2
     tables:
-      - name: raw_tanita_health_planet__body_composition_current
-        description: "Body composition (weight, body fat) — latest revision"
-      - name: raw_tanita_health_planet__blood_pressure_current
-        description: "Blood pressure (systolic, diastolic, pulse) — latest revision"
+      - name: raw_tanita_health_planet__body_composition
+        description: "Body composition (weight, body fat) — full revision history"
+      - name: raw_tanita_health_planet__blood_pressure
+        description: "Blood pressure (systolic, diastolic, pulse) — full revision history"

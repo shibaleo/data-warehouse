@@ -2,7 +2,7 @@
 -- Source: raw_zaim__category_current (data_warehouse_v2, append-only)
 
 with source as (
-    select * from {{ source('raw_zaim', 'raw_zaim__category_current') }}
+    select * from {{ ref('raw_zaim__category_current') }}
 ),
 
 staged as (

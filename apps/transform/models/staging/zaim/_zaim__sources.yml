@@ -1,17 +1,15 @@
 version: 2
 
-# Append-only raw layer: stg reads from *_current views.
-
 sources:
   - name: raw_zaim
-    description: "Zaim API raw responses (append-only, current projection)"
+    description: "Zaim API raw responses (append-only base tables)"
     schema: data_warehouse_v2
     tables:
-      - name: raw_zaim__money_current
-        description: "Money records (income / payment / transfer) — latest revision"
-      - name: raw_zaim__category_current
-        description: "User categories — latest revision"
-      - name: raw_zaim__genre_current
-        description: "User genres (subcategories) — latest revision"
-      - name: raw_zaim__account_current
-        description: "User accounts (wallet / bank / card / e-money) — latest revision"
+      - name: raw_zaim__money
+        description: "Money records (income / payment / transfer) — full revision history"
+      - name: raw_zaim__category
+        description: "User categories — full revision history"
+      - name: raw_zaim__genre
+        description: "User genres (subcategories) — full revision history"
+      - name: raw_zaim__account
+        description: "User accounts (wallet / bank / card / e-money) — full revision history"

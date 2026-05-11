@@ -2,7 +2,7 @@
 -- Source: raw_tanita_health_planet__body_composition_current (data_warehouse_v2, append-only)
 
 with source as (
-    select * from {{ source('raw_tanita_health_planet', 'raw_tanita_health_planet__body_composition_current') }}
+    select * from {{ ref('raw_tanita_health_planet__body_composition_current') }}
 ),
 
 staged as (

@@ -1,5 +1,5 @@
 with source as (
-    select * from {{ source('raw_toggl_track', 'raw_toggl_track__clients_current') }}
+    select * from {{ ref('raw_toggl_track__clients_current') }}
 ),
 
 staged as (

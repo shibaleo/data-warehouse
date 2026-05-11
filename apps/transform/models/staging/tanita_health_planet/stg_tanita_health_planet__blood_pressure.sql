@@ -2,7 +2,7 @@
 -- Source: raw_tanita_health_planet__blood_pressure_current (data_warehouse_v2, append-only)
 
 with source as (
-    select * from {{ source('raw_tanita_health_planet', 'raw_tanita_health_planet__blood_pressure_current') }}
+    select * from {{ ref('raw_tanita_health_planet__blood_pressure_current') }}
 ),
 
 staged as (

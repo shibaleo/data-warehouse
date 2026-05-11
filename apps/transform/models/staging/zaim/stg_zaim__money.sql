@@ -9,7 +9,7 @@
 -- the synced_at line keeps PostgreSQL from confusing the two.
 
 with source as (
-    select * from {{ source('raw_zaim', 'raw_zaim__money_current') }}
+    select * from {{ ref('raw_zaim__money_current') }}
 ),
 
 staged as (

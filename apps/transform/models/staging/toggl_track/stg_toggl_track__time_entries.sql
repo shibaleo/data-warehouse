@@ -14,7 +14,7 @@ projects as (
 
 -- Source 1: Reports API v3 (Primary)
 report_source as (
-    select * from {{ source('raw_toggl_track', 'raw_toggl_track__time_entries_report_current') }}
+    select * from {{ ref('raw_toggl_track__time_entries_report_current') }}
 ),
 
 report_entries as (
@@ -45,7 +45,7 @@ report_entries as (
 
 -- Source 2: Track API v9
 track_source as (
-    select * from {{ source('raw_toggl_track', 'raw_toggl_track__time_entries_current') }}
+    select * from {{ ref('raw_toggl_track__time_entries_current') }}
 ),
 
 track_entries_with_tag_names as (

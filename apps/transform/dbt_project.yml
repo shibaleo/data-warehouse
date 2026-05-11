@@ -22,6 +22,9 @@ models:
     +persist_docs:
       relation: true
       columns: true
+    wrappers:
+      +materialized: view
+      +schema: data_warehouse_v2
     staging:
       +materialized: view
     dimensions:

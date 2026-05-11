@@ -1,26 +1,25 @@
 version: 2
 
-# Append-only raw layer: stg reads from *_current views (latest non-deleted
-# revision per source_id) in data_warehouse_v2.
+# See toggl_track sources.yml for the source → wrapper → stg lineage rule.
 
 sources:
   - name: raw_fitbit
-    description: "Fitbit raw API responses (append-only, current projection)"
+    description: "Fitbit raw API responses (append-only base tables)"
     schema: data_warehouse_v2
     tables:
-      - name: raw_fitbit__sleep_current
-        description: "Fitbit Sleep API v1.2 — latest revision per log_id"
-      - name: raw_fitbit__activity_current
-        description: "Fitbit Activity Daily Summary API v1 — latest revision per date"
-      - name: raw_fitbit__heart_rate_current
-        description: "Fitbit Heart Rate API v1 — latest revision per date"
-      - name: raw_fitbit__hrv_current
-        description: "Fitbit HRV API v1 — latest revision per date"
-      - name: raw_fitbit__spo2_current
-        description: "Fitbit SpO2 API v1 — latest revision per date"
-      - name: raw_fitbit__breathing_rate_current
-        description: "Fitbit Breathing Rate API v1 — latest revision per date"
-      - name: raw_fitbit__cardio_score_current
-        description: "Fitbit Cardio Score (VO2 Max) API v1 — latest revision per date"
-      - name: raw_fitbit__temperature_skin_current
-        description: "Fitbit Temperature Skin API v1 — latest revision per date"
+      - name: raw_fitbit__sleep
+        description: "Fitbit Sleep API v1.2 — full revision history"
+      - name: raw_fitbit__activity
+        description: "Fitbit Activity Daily Summary API v1 — full revision history"
+      - name: raw_fitbit__heart_rate
+        description: "Fitbit Heart Rate API v1 — full revision history"
+      - name: raw_fitbit__hrv
+        description: "Fitbit HRV API v1 — full revision history"
+      - name: raw_fitbit__spo2
+        description: "Fitbit SpO2 API v1 — full revision history"
+      - name: raw_fitbit__breathing_rate
+        description: "Fitbit Breathing Rate API v1 — full revision history"
+      - name: raw_fitbit__cardio_score
+        description: "Fitbit Cardio Score (VO2 Max) API v1 — full revision history"
+      - name: raw_fitbit__temperature_skin
+        description: "Fitbit Temperature Skin API v1 — full revision history"

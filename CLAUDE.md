@@ -50,7 +50,15 @@ WHERE deleted = false AND purged = false;
 
 - `T` 省略時は `now()`（=  `_current` view と同じ）
 - 全 raw テーブルが同形なので 1 関数で対応（テーブル追加時にも変更不要）
-- `<table>_current` view 群はこの関数を呼ぶ thin wrapper になっている (migration 012)
+- `<table>_current` view 群はこの関数を呼ぶ thin wrapper、**dbt models として管理** (`apps/transform/models/wrappers/`)。中身は共有マクロ `wrap_raw(source_name, table_name)` 経由
+
+### 新 raw テーブル追加手順
+1. raw 本体を `data_warehouse_v2.raw_<service>__<entity>` として作成（migration）
+2. sources.yml に base table 名を 1 行追加
+3. `models/wrappers/raw_<service>__<entity>_current.sql` を 1 行で作成：`{{ wrap_raw('raw_<service>', 'raw_<service>__<entity>') }}`
+4. stg を書くなら `{{ ref('raw_<service>__<entity>_current') }}` で参照
+
+`dbt run` 一発で wrapper が view として materialize される。
 
 ## dbt sources
 
