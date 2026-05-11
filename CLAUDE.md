@@ -60,6 +60,72 @@ WHERE deleted = false AND purged = false;
 
 `dbt run` 一発で wrapper が view として materialize される。
 
+## Pattern 2 (bitemporal dim) — app-authored data
+
+app-authored で **time-tracked** な dim を作るときは Pattern 2 を使う。
+raw との違い:
+
+| | Pattern 1 (raw) | Pattern 2 (dim) |
+|---|---|---|
+| id 型 | TEXT (外部 native) | uuid (`gen_random_uuid()`) |
+| content | JSONB | typed columns |
+| content_hash | あり | なし |
+| valid_from | なし | あり、`DEFAULT now()` |
+| as-of-T 軸 | tx_t のみ | biz_t + tx_t (per-table function) |
+
+### 標準シェイプ
+
+```sql
+CREATE TABLE data_warehouse_v2.<dim_name> (
+    id           uuid        NOT NULL DEFAULT gen_random_uuid(),
+    revision     int         NOT NULL,
+    created_at   timestamptz NOT NULL DEFAULT now(),
+    valid_from   timestamptz NOT NULL DEFAULT now(),
+    -- <typed content fields>
+    deleted      boolean     NOT NULL DEFAULT false,
+    purged       boolean     NOT NULL DEFAULT false,
+    PRIMARY KEY (id, revision)
+);
+CREATE UNIQUE INDEX <name>_purge_unique ON ... (id) WHERE purged = true;
+CREATE INDEX <name>_id_validfrom_revision_desc ON ... (id, valid_from DESC, revision DESC);
+```
+
+`valid_to` は物理列にしない（append-only を破るため）。range projection が必要なら `LEAD(valid_from) OVER (PARTITION BY id ORDER BY valid_from)` で derive。
+
+### 新 dim テーブル追加手順
+
+1. migration: `CREATE TABLE` (上記 shape)
+2. migration の同 SQL 内で: `CALL data_warehouse_v2.create_dim_at_function('<dim_name>');`
+   - これで `<dim_name>_at(biz_t, tx_t)` 関数が自動生成
+3. `models/wrappers/<dim_name>_current.sql` を 1 行: `{{ wrap_dim('<dim_name>') }}`
+4. `dbt run`
+
+### retroactive / future-dated の使い分け
+
+- 通常の更新（「今からこう」）→ `valid_from` 省略、`DEFAULT now()` が効く
+- retroactive 訂正（「実は過去 X 日からこうだった」）→ `valid_from = '過去日付'` を明示
+- future-dated 予約（「来月からこう」）→ `valid_from = '未来日付'` を明示
+
+### 時点指定クエリ
+
+```sql
+-- 現在
+SELECT * FROM data_warehouse_v2.<dim>_at();
+
+-- biz_t 時点（過去の真実 = 現在の知識で過去をどう見るか）
+SELECT * FROM data_warehouse_v2.<dim>_at('2026-03-01'::timestamptz);
+
+-- tx_t 時点（その日 DB に書かれていた状態）
+SELECT * FROM data_warehouse_v2.<dim>_at(now(), '2026-03-01'::timestamptz);
+
+-- 両方指定（「2026-03-01 時点で、2026-02-15 の状態をどう知っていたか」）
+SELECT * FROM data_warehouse_v2.<dim>_at('2026-02-15'::timestamptz, '2026-03-01'::timestamptz);
+```
+
+ORDER BY は `id, valid_from DESC, revision DESC` で固定（retroactive 正しさのため）。helper が自動セット。
+
+実装サンプルと検証クエリは `migrations/013_pattern2_bitemporal.sql` を参照。
+
 ## dbt sources
 
 stg は **必ず `_current` view** を参照する。ベーステーブル（全 revision）を直接読まない。
