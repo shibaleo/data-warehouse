@@ -15,3 +15,6 @@ apps/transform/.user.yml
 __pycache__/
 *.pyc
 .venv/
+
+# Google Health API probe responses (transient, may contain user identifiers)
+scripts/probe-out/

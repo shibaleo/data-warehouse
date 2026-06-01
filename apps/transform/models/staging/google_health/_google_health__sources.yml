@@ -1,0 +1,32 @@
+version: 2
+
+# Successor to raw_fitbit (Fitbit Web API shutdown 2026-09).
+# See docs/002_google_health_migration.md for the Fitbit→Google Health mapping.
+
+sources:
+  - name: raw_google_health
+    description: "Google Health API v4 raw responses (append-only base tables)"
+    schema: data_warehouse_v2
+    tables:
+      - name: raw_google_health__sleep
+        description: "Sleep sessions (filter: sleep.interval.end_time)"
+      - name: raw_google_health__steps
+        description: "Steps data points (split from Fitbit activity; filter: steps.interval.start_time)"
+      - name: raw_google_health__active_minutes
+        description: "Active minutes (split from Fitbit activity; filter: active_minutes.interval.start_time)"
+      - name: raw_google_health__distance
+        description: "Distance (split from Fitbit activity; filter: distance.interval.start_time)"
+      - name: raw_google_health__exercise
+        description: "Exercise sessions (filter: exercise.interval.end_time)"
+      - name: raw_google_health__daily_resting_heart_rate
+        description: "Daily resting heart rate (filter: daily_resting_heart_rate.civil_date)"
+      - name: raw_google_health__daily_heart_rate_variability
+        description: "Daily HRV (filter: daily_heart_rate_variability.civil_date)"
+      - name: raw_google_health__daily_oxygen_saturation
+        description: "Daily SpO2 (filter: daily_oxygen_saturation.civil_date)"
+      - name: raw_google_health__respiratory_rate_sleep_summary
+        description: "Respiratory rate during sleep (source_id from sampleTime.physicalTime; filter behavior TBD)"
+      - name: raw_google_health__daily_vo2_max
+        description: "Daily VO2 max — Fitbit cardio_score equivalent (filter: daily_vo2_max.civil_date)"
+      - name: raw_google_health__daily_sleep_temperature_derivations
+        description: "Daily sleep temperature derivations (filter: daily_sleep_temperature_derivations.civil_date)"

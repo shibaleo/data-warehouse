@@ -36,6 +36,17 @@ function dailySync(): void {
   log('=== Daily Sync Complete ===');
 }
 
+/**
+ * Google Health parallel-run sync (Fitbit successor; Fitbit Web API shutdown
+ * 2026-09). Runs alongside dailySync() during the migration window so we can
+ * diff raw_fitbit__* vs raw_google_health__* before cutover.
+ */
+function dailySyncGoogleHealth(): void {
+  log('=== Daily Sync (Google Health) Start ===');
+  syncGoogleHealthAll(7);
+  log('=== Daily Sync (Google Health) Complete ===');
+}
+
 // --- Zaim ad-hoc ---
 
 /** Zaim full sync: all money records from 2020-01-01 + masters */
@@ -80,6 +91,14 @@ function installTriggers(): void {
     .atHour(12)
     .create();
 
+  // Google Health parallel-run sync at 1:00 PM JST (1h after dailySync so
+  // logs are easy to separate during the diff/validation period).
+  ScriptApp.newTrigger('dailySyncGoogleHealth')
+    .timeBased()
+    .everyDays(1)
+    .atHour(13)
+    .create();
+
   // Toggl weekly historical sync on Monday at 3:00 AM JST
   ScriptApp.newTrigger('togglWeeklyHistoricalSync')
     .timeBased()
@@ -87,5 +106,5 @@ function installTriggers(): void {
     .atHour(3)
     .create();
 
-  log('Triggers installed: togglHourlySync, dailySync, togglWeeklyHistoricalSync');
+  log('Triggers installed: togglHourlySync, dailySync, dailySyncGoogleHealth, togglWeeklyHistoricalSync');
 }

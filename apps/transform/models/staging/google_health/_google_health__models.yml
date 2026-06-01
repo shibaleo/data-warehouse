@@ -1,0 +1,177 @@
+version: 2
+
+models:
+  - name: stg_google_health__sleep
+    description: "Google Health sleep sessions (Fitbit sleep successor)"
+    columns:
+      - name: source_id
+        description: "Google Health dataPoint name last segment"
+        data_tests:
+          - unique
+          - not_null
+      - name: start_time
+      - name: end_time
+      - name: duration
+      - name: sleep_type
+      - name: stages
+        description: "Per-stage breakdown (JSONB array) — start/end/type per stage"
+      - name: device
+      - name: synced_at
+        data_tests: [not_null]
+
+  - name: stg_google_health__exercise
+    description: "Google Health exercise sessions"
+    columns:
+      - name: source_id
+        data_tests:
+          - unique
+          - not_null
+      - name: start_time
+      - name: end_time
+      - name: exercise_type
+      - name: active_duration_seconds
+      - name: steps
+      - name: distance_mm
+      - name: calories_kcal
+      - name: average_heart_rate_bpm
+      - name: synced_at
+        data_tests: [not_null]
+
+  - name: stg_google_health__steps
+    description: "Google Health steps at sub-minute granularity"
+    columns:
+      - name: source_id
+        description: "Composite: startTime__recordingMethod__device"
+        data_tests:
+          - unique
+          - not_null
+      - name: start_time
+        data_tests: [not_null]
+      - name: end_time
+      - name: steps
+      - name: device
+      - name: recording_method
+      - name: synced_at
+        data_tests: [not_null]
+
+  - name: stg_google_health__active_minutes
+    description: "Google Health active minutes per minute, broken down by activity level"
+    columns:
+      - name: source_id
+        data_tests:
+          - unique
+          - not_null
+      - name: start_time
+        data_tests: [not_null]
+      - name: total_active_minutes
+        description: "Sum of activeMinutesByActivityLevel.activeMinutes"
+      - name: active_minutes_by_level
+        description: "Per-level breakdown (JSONB array)"
+      - name: synced_at
+        data_tests: [not_null]
+
+  - name: stg_google_health__distance
+    description: "Google Health distance at sub-minute granularity"
+    columns:
+      - name: source_id
+        data_tests:
+          - unique
+          - not_null
+      - name: start_time
+        data_tests: [not_null]
+      - name: distance_mm
+      - name: distance_km
+      - name: device
+      - name: synced_at
+        data_tests: [not_null]
+
+  - name: stg_google_health__daily_resting_heart_rate
+    description: "Daily resting heart rate (Fitbit heart_rate successor)"
+    columns:
+      - name: source_id
+        description: "YYYY-MM-DD civil date"
+        data_tests:
+          - unique
+          - not_null
+      - name: date
+        data_tests: [not_null]
+      - name: civil_date
+      - name: resting_heart_rate
+      - name: calculation_method
+      - name: synced_at
+        data_tests: [not_null]
+
+  - name: stg_google_health__daily_heart_rate_variability
+    description: "Daily HRV (Fitbit hrv successor)"
+    columns:
+      - name: source_id
+        data_tests:
+          - unique
+          - not_null
+      - name: date
+        data_tests: [not_null]
+      - name: average_hrv_ms
+      - name: non_rem_heart_rate_bpm
+      - name: entropy
+      - name: deep_sleep_rmssd_ms
+      - name: synced_at
+        data_tests: [not_null]
+
+  - name: stg_google_health__daily_oxygen_saturation
+    description: "Daily SpO2 (Fitbit spo2 successor)"
+    columns:
+      - name: source_id
+        data_tests:
+          - unique
+          - not_null
+      - name: date
+        data_tests: [not_null]
+      - name: average_spo2
+      - name: lower_bound_spo2
+      - name: upper_bound_spo2
+      - name: stddev_spo2
+      - name: synced_at
+        data_tests: [not_null]
+
+  - name: stg_google_health__daily_vo2_max
+    description: "Daily VO2 max (Fitbit cardio_score successor). Column shape provisional — refine once first datapoint lands."
+    columns:
+      - name: source_id
+        data_tests:
+          - unique
+          - not_null
+      - name: date
+        data_tests: [not_null]
+      - name: vo2_max
+      - name: raw_payload
+        description: "Full dailyVo2Max payload, kept until column schema is firmed up"
+      - name: synced_at
+        data_tests: [not_null]
+
+  - name: stg_google_health__daily_sleep_temperature_derivations
+    description: "Daily sleep temperature derivations (Fitbit temperature_skin successor)"
+    columns:
+      - name: source_id
+        data_tests:
+          - unique
+          - not_null
+      - name: date
+        data_tests: [not_null]
+      - name: nightly_temperature_celsius
+      - name: baseline_temperature_celsius
+      - name: nightly_relative_celsius
+        description: "Computed = nightly - baseline (matches Fitbit's nightly_relative semantics)"
+      - name: synced_at
+        data_tests: [not_null]
+
+  - name: stg_google_health__respiratory_rate_sleep_summary
+    description: "Respiratory rate during sleep. Empty pending filter resolution (docs/002 Unresolved TODOs #1)."
+    columns:
+      - name: source_id
+        data_tests:
+          - unique
+          - not_null
+      - name: sample_time
+      - name: breaths_per_minute
+      - name: synced_at
+        data_tests: [not_null]
