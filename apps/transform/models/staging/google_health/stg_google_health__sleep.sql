@@ -18,14 +18,29 @@ staged as (
          - (data->'sleep'->'interval'->>'startTime')::timestamptz) as duration,
 
         -- "sleep_date" = the date the sleep is conceptually attributed to.
-        -- Convention (matching Fitbit's dateOfSleep semantics): the day the
-        -- user went to bed, which is the calendar day before the JST wake
-        -- time. e.g. an end_time of 2026-05-31 11:58 JST → sleep_date
-        -- 2026-05-30 (the user got into bed late on 5/30). This works for
-        -- both overnight (bed at 23:xx, wake 06:xx next day) and shifted
-        -- (bed at 01:xx, wake 11:xx same day) sessions.
-        ((data->'sleep'->'interval'->>'endTime')::timestamptz
-            AT TIME ZONE 'Asia/Tokyo')::date - 1 as sleep_date,
+        -- Three cases:
+        --   (1) Crosses midnight (bed_date != wake_date) → bed_date.
+        --       e.g. bed 23:00 5/31, wake 06:47 6/1 → sleep_date 5/31
+        --   (2) Same-day, wake hour < 12 (morning) → bed_date - 1.
+        --       Treats it as continuation of last night's main sleep —
+        --       includes二度寝, post-all-nighter morning sleep, and
+        --       bed-after-midnight cases.
+        --       e.g. bed 01:56 5/31, wake 11:58 5/31 → sleep_date 5/30
+        --       e.g. bed 10:27 4/4 (二度寝), wake 11:40 4/4 → sleep_date 4/3
+        --   (3) Same-day, wake hour >= 12 (afternoon/evening) → bed_date.
+        --       Genuine nap, attributed to today.
+        --       e.g. bed 15:08 4/25, wake 16:09 4/25 → sleep_date 4/25
+        --       e.g. bed 12:06 4/5, wake 13:45 4/5 → sleep_date 4/5
+        -- The noon cutoff on wake_time is the only threshold; it discriminates
+        -- "morning continuation of last night" from "today's afternoon/evening nap".
+        CASE
+          WHEN ((data->'sleep'->'interval'->>'startTime')::timestamptz AT TIME ZONE 'Asia/Tokyo')::date
+            <> ((data->'sleep'->'interval'->>'endTime')::timestamptz AT TIME ZONE 'Asia/Tokyo')::date
+            THEN ((data->'sleep'->'interval'->>'startTime')::timestamptz AT TIME ZONE 'Asia/Tokyo')::date
+          WHEN extract(hour from (data->'sleep'->'interval'->>'endTime')::timestamptz AT TIME ZONE 'Asia/Tokyo') < 12
+            THEN ((data->'sleep'->'interval'->>'startTime')::timestamptz AT TIME ZONE 'Asia/Tokyo')::date - 1
+          ELSE ((data->'sleep'->'interval'->>'startTime')::timestamptz AT TIME ZONE 'Asia/Tokyo')::date
+        END as sleep_date,
 
         data->'sleep'->>'type' as sleep_type,
 
