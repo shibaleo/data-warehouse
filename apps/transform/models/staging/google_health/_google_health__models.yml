@@ -12,6 +12,8 @@ models:
       - name: start_time
       - name: end_time
       - name: duration
+      - name: sleep_date
+        description: "Calendar date the session is attributed to (the day the user went to bed in JST = wake-day - 1). Matches Fitbit dateOfSleep semantics."
       - name: sleep_type
       - name: stages
         description: "Per-stage breakdown (JSONB array) — start/end/type per stage"
