@@ -5,6 +5,35 @@
 const TOGGL_API_V9 = 'https://api.track.toggl.com/api/v9';
 const TOGGL_REPORTS_V3 = 'https://api.track.toggl.com/reports/api/v3';
 
+// Sentinel string embedded in Error.message so callers can detect quota-exceeded
+// (402) responses and skip the rest of the sync without retrying.
+const TOGGL_QUOTA_SENTINEL = 'TogglQuotaExceeded';
+const TOGGL_402_COUNTER_KEY = 'toggl_402_count';
+// Time-entries / detailed-report page size used by Toggl. Reaching this on
+// /me/time_entries is a signal that the requested window is too wide.
+const TOGGL_PAGE_SIZE = 1000;
+
+function isTogglQuotaError(err: unknown): boolean {
+  return err instanceof Error && err.message.indexOf(TOGGL_QUOTA_SENTINEL) !== -1;
+}
+
+function bumpToggl402Counter(): void {
+  const props = PropertiesService.getScriptProperties();
+  const cur = parseInt(props.getProperty(TOGGL_402_COUNTER_KEY) || '0', 10) || 0;
+  props.setProperty(TOGGL_402_COUNTER_KEY, String(cur + 1));
+}
+
+function checkTogglResponse(code: number, body: string): void {
+  if (code === 402) {
+    bumpToggl402Counter();
+    log(`Toggl quota exceeded (HTTP 402), skipping. body=${body.substring(0, 200)}`);
+    throw new Error(`${TOGGL_QUOTA_SENTINEL}: HTTP 402`);
+  }
+  if (code >= 400) {
+    throw new Error(`Toggl HTTP ${code}: ${body.substring(0, 500)}`);
+  }
+}
+
 interface TogglCredentials {
   apiToken: string;
   workspaceId: string;
@@ -46,7 +75,9 @@ function togglGet(url: string): unknown {
   const response = httpFetch(url, {
     headers: { 'Authorization': getTogglAuthHeader() },
   });
-  return JSON.parse(response.getContentText());
+  const body = response.getContentText();
+  checkTogglResponse(response.getResponseCode(), body);
+  return JSON.parse(body);
 }
 
 function togglPost(url: string, body: unknown): unknown {
@@ -56,7 +87,9 @@ function togglPost(url: string, body: unknown): unknown {
     headers: { 'Authorization': getTogglAuthHeader() },
     payload: JSON.stringify(body),
   });
-  return JSON.parse(response.getContentText());
+  const text = response.getContentText();
+  checkTogglResponse(response.getResponseCode(), text);
+  return JSON.parse(text);
 }
 
 // --- Track API v9 ---
@@ -95,9 +128,16 @@ function fetchGroups(): Record<string, unknown>[] {
 }
 
 function fetchTimeEntries(startDate: string, endDate: string): Record<string, unknown>[] {
-  return togglGet(
+  const entries = togglGet(
     `${TOGGL_API_V9}/me/time_entries?start_date=${startDate}&end_date=${endDate}`
   ) as Record<string, unknown>[];
+  if (entries && entries.length >= TOGGL_PAGE_SIZE) {
+    // Track v9 caps /me/time_entries at this page size. Hitting it means the
+    // requested window is too wide (e.g. stale `since`, GAS long downtime) —
+    // investigate manually; auto-pagination intentionally not implemented.
+    log(`WARN: /me/time_entries returned ${entries.length} rows (>= page size ${TOGGL_PAGE_SIZE}) for ${startDate}..${endDate}`);
+  }
+  return entries;
 }
 
 // --- Reports API v3 ---

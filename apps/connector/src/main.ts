@@ -28,12 +28,30 @@ function togglFullHistoricalSync(): void {
 /** Daily sync: Toggl masters + time entries + Fitbit all + Tanita all + Zaim all */
 function dailySync(): void {
   log('=== Daily Sync Start ===');
-  syncMasters();
+  reportAndResetToggl402Counter();
+  try {
+    syncMasters();
+  } catch (err) {
+    if (isTogglQuotaError(err)) {
+      log('syncMasters skipped due to Toggl 402');
+    } else {
+      throw err;
+    }
+  }
   syncTimeEntries({ days: 3 });
   syncFitbitAll(7);
   syncTanitaAll(30);
   syncZaimAll(30);
   log('=== Daily Sync Complete ===');
+}
+
+function reportAndResetToggl402Counter(): void {
+  const props = PropertiesService.getScriptProperties();
+  const cur = parseInt(props.getProperty('toggl_402_count') || '0', 10) || 0;
+  if (cur > 0) {
+    log(`Toggl 402 count since last dailySync: ${cur}`);
+  }
+  props.deleteProperty('toggl_402_count');
 }
 
 /**

@@ -29,7 +29,16 @@ function syncTimeEntriesReport(options: SyncReportOptions = {}): void {
 
   for (const chunk of chunks) {
     log(`Processing chunk: ${chunk.start} to ${chunk.end}`);
-    const entries = fetchAllDetailedReport(chunk.start, chunk.end);
+    let entries: Record<string, unknown>[];
+    try {
+      entries = fetchAllDetailedReport(chunk.start, chunk.end);
+    } catch (err) {
+      if (isTogglQuotaError(err)) {
+        log(`syncTimeEntriesReport skipped at chunk ${chunk.start}..${chunk.end} due to Toggl 402; next trigger will retry`);
+        return;
+      }
+      throw err;
+    }
 
     const seen = new Set<string>();
     const unique: RawRecord[] = [];

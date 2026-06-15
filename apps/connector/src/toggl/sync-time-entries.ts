@@ -12,8 +12,17 @@ interface SyncTimeEntriesOptions {
   end?: string;   // YYYY-MM-DD
 }
 
+// Hard upper bound on the diff-sync window. Track v9 /me/time_entries pages at
+// 1000 rows; clamping the window protects against pagination blow-ups if a
+// caller (or future since-based path) ever passes an absurd value.
+const TOGGL_TIME_ENTRIES_MAX_DAYS = 7;
+
 function syncTimeEntries(options: SyncTimeEntriesOptions = {}): void {
-  const days = options.days || 3;
+  const requestedDays = options.days || 3;
+  const days = Math.min(requestedDays, TOGGL_TIME_ENTRIES_MAX_DAYS);
+  if (days !== requestedDays) {
+    log(`WARN: syncTimeEntries days=${requestedDays} clamped to ${days}`);
+  }
   const now = new Date();
   const tomorrow = new Date(now.getTime() + 24 * 60 * 60 * 1000);
   const endDate = options.end || Utilities.formatDate(tomorrow, 'UTC', 'yyyy-MM-dd');
@@ -22,7 +31,16 @@ function syncTimeEntries(options: SyncTimeEntriesOptions = {}): void {
 
   log(`Syncing time entries: ${startDate} to ${endDate}`);
 
-  const entries = fetchTimeEntries(startDate, endDate) || [];
+  let entries: Record<string, unknown>[];
+  try {
+    entries = fetchTimeEntries(startDate, endDate) || [];
+  } catch (err) {
+    if (isTogglQuotaError(err)) {
+      log('syncTimeEntries skipped due to Toggl 402; next trigger will retry');
+      return;
+    }
+    throw err;
+  }
   const records = toRawRecords(entries);
 
   appendRaw('raw_toggl_track__time_entries', records, 'v9', {
