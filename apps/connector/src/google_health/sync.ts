@@ -238,8 +238,5 @@ function syncGoogleHealthAll(days: number = 7): void {
   syncGoogleHealthDailyOxygenSaturation(days);
   syncGoogleHealthDailyVo2Max(days);
   syncGoogleHealthDailySleepTemperatureDerivations(days);
-  // syncGoogleHealthRespiratoryRateSleepSummary disabled until filter syntax
-  // is resolved — API rejects every candidate field (probe was 200 OK only
-  // because the empty window short-circuited validation). See docs/002
-  // "Unresolved TODOs #1". Function is kept callable for manual experiments.
+  syncGoogleHealthRespiratoryRateSleepSummary(days);
 }

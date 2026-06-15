@@ -141,10 +141,11 @@ function fetchGoogleHealthDailySleepTemperatureDerivations(startIso: string, end
 }
 
 function fetchGoogleHealthRespiratoryRateSleepSummary(startIso: string, endIso: string): Record<string, unknown>[] {
-  // Probe was 200 OK with civil_sample_time — entity simply had 0 points in window.
-  // If field name turns out wrong long-term, switch to no-filter + client-side window.
+  // Filter field is `sample_time.physical_time` (nested), confirmed via probe
+  // 2026-06-15. Earlier civil_sample_time/civil_date guesses were rejected
+  // with INVALID_DATA_POINT_FILTER_DATA_TYPE_MEMBER.
   return listGoogleHealthDataPoints(
     'respiratory-rate-sleep-summary',
-    civilTimeFilter('respiratory_rate_sleep_summary.civil_sample_time', startIso, endIso),
+    instantFilter('respiratory_rate_sleep_summary.sample_time.physical_time', startIso, endIso),
   );
 }

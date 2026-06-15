@@ -127,6 +127,7 @@ async function probe(accessToken, dataType, startTime, endTime) {
     `${snake}.civil_date >= "${startDate}" AND ${snake}.civil_date < "${endDate}"`,
     `${snake}.sample_time >= "${startTime}" AND ${snake}.sample_time < "${endTime}"`,
     `${snake}.civil_sample_time >= "${startCivil}" AND ${snake}.civil_sample_time < "${endCivil}"`,
+    `${snake}.sample_time.physical_time >= "${startTime}" AND ${snake}.sample_time.physical_time < "${endTime}"`,
   ];
   let last;
   for (const filter of candidates) {

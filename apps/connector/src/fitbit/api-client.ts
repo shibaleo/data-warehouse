@@ -170,8 +170,13 @@ interface FitbitSpo2Day {
 }
 
 function fetchFitbitSpo2(start: string, end: string): FitbitSpo2Day[] {
-  const data = fitbitGetOptional(`/1/user/-/spo2/date/${start}/${end}.json`) as { value?: FitbitSpo2Day[] } | null;
-  return data?.value || [];
+  // /spo2/date/{s}/{e}.json returns the day array at the response root
+  // (NOT wrapped in `{ value: [...] }`). Wrapper assumption silently broke
+  // sync around 2025-12 when this endpoint started returning the bare array.
+  const data = fitbitGetOptional(`/1/user/-/spo2/date/${start}/${end}.json`);
+  if (Array.isArray(data)) return data as FitbitSpo2Day[];
+  const obj = data as { value?: FitbitSpo2Day[] } | null;
+  return obj?.value || [];
 }
 
 // ---------------------------------------------------------------------------
