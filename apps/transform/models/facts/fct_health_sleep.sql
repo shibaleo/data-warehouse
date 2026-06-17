@@ -1,56 +1,48 @@
 -- fct_health_sleep.sql
--- Daily sleep fact from Fitbit sleep data
--- One row per sleep_date (main sleep only)
+-- Daily sleep fact, sourced from Google Health sleep sessions.
+-- One row per sleep_date (wake-day in JST), summing across all sessions
+-- that ended that day (so naps and main sleep are combined).
 
-with sleep_records as (
-    select
-        md5(source_id::text)::uuid as id,
-        source_id,
-        date as sleep_date,
-        start_time as start_at,
-        end_time as end_at,
-        duration_ms / 1000 as duration_seconds,
-        efficiency,
-        is_main_sleep,
-        minutes_asleep,
-        minutes_awake,
-        time_in_bed,
-        sleep_type,
-        deep_minutes,
-        light_minutes,
-        rem_minutes,
-        wake_minutes,
-        synced_at
-    from {{ ref('stg_fitbit__sleep') }}
-    where is_main_sleep = true
+with sessions as (
+    select * from {{ ref('stg_google_health__sleep_sessions') }}
 ),
 
-deduplicated as (
+per_day as (
     select
-        *,
-        row_number() over (
-            partition by sleep_date
-            order by duration_seconds desc
-        ) as rn
-    from sleep_records
+        sleep_date,
+        min(start_at)                          as start_at,
+        max(end_at)                            as end_at,
+        sum(duration_seconds)                  as duration_seconds,
+        sum(minutes_asleep)                    as minutes_asleep,
+        sum(minutes_awake)                     as minutes_awake,
+        sum(time_in_bed)                       as time_in_bed,
+        sum(deep_minutes)                      as deep_minutes,
+        sum(light_minutes)                     as light_minutes,
+        sum(rem_minutes)                       as rem_minutes,
+        sum(wake_minutes)                      as wake_minutes,
+        max(synced_at)                         as synced_at
+    from sessions
+    group by sleep_date
 )
 
 select
-    id,
-    source_id,
+    md5(sleep_date::text)::uuid as id,
+    md5(sleep_date::text)       as source_id,
     sleep_date,
     start_at,
     end_at,
     duration_seconds,
-    efficiency,
+    case when time_in_bed > 0
+         then round(minutes_asleep::numeric / time_in_bed * 100)::int
+         else null
+    end                         as efficiency,
     minutes_asleep,
     minutes_awake,
     time_in_bed,
-    sleep_type,
+    'STAGES'::text              as sleep_type,
     deep_minutes,
     light_minutes,
     rem_minutes,
     wake_minutes,
     synced_at
-from deduplicated
-where rn = 1
+from per_day

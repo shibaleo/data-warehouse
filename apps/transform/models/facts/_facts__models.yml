@@ -41,10 +41,13 @@ models:
         description: "PRIMARY/SECONDARY/TERTIARY"
 
   - name: fct_health_sleep
-    description: "Daily sleep fact from Fitbit (main sleep only, one row per sleep_date)"
+    description: |
+      Daily sleep fact from Google Health (one row per sleep_date = JST wake-day).
+      Sessions are reconstructed from raw stages (see stg_google_health__sleep_sessions)
+      and summed per wake-day so naps are folded into the daily total.
     columns:
       - name: id
-        description: "Fitbit log_id from raw"
+        description: "md5(sleep_date) cast to uuid"
         data_tests: [not_null]
       - name: sleep_date
         description: "睡眠日（一晩の代表日）。1日1行"

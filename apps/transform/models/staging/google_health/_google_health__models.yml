@@ -21,6 +21,35 @@ models:
       - name: synced_at
         data_tests: [not_null]
 
+  - name: stg_google_health__sleep_sessions
+    description: |
+      Sleep sessions reconstructed from raw stages. Deduplicates backfill-duplicated
+      (type, start, end) stage rows and re-sessions by a >2h gap between stages,
+      so each row is one contiguous sleep session. Labeled by wake_date (JST date
+      of session end) — note this differs from stg_google_health__sleep.sleep_date
+      (bed-day attribution).
+    columns:
+      - name: source_id
+        description: "md5(start_at) — session-deterministic key"
+        data_tests: [unique, not_null]
+      - name: sleep_date
+        description: "JST date of session end (wake-day)"
+        data_tests: [not_null]
+      - name: start_at
+        data_tests: [not_null]
+      - name: end_at
+        data_tests: [not_null]
+      - name: minutes_asleep
+      - name: minutes_awake
+      - name: time_in_bed
+      - name: deep_minutes
+      - name: light_minutes
+      - name: rem_minutes
+      - name: wake_minutes
+      - name: efficiency
+      - name: synced_at
+        data_tests: [not_null]
+
   - name: stg_google_health__exercise
     description: "Google Health exercise sessions"
     columns:
