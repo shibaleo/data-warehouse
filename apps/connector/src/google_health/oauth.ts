@@ -1,11 +1,10 @@
 // Google Health API OAuth2 token management.
 //
-// Differences vs Fitbit OAuth (fitbit/oauth.ts):
+// Notes:
 //   - Token endpoint: oauth2.googleapis.com/token
 //   - Refresh request is form-encoded with client_id/client_secret in the
 //     body (not HTTP Basic auth)
-//   - Access tokens expire in 1 hour (Fitbit's were 8h) → refresh threshold
-//     is 10 minutes before expiry
+//   - Access tokens expire in 1 hour → refresh threshold is 10 min before expiry
 //   - service_name in data_warehouse.credentials is 'google_health'
 
 const GOOGLE_HEALTH_TOKEN_URL = 'https://oauth2.googleapis.com/token';

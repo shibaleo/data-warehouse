@@ -1,11 +1,10 @@
 // Google Health data sync — 11 entities → data_warehouse_v2.raw_google_health__*
-// (append-only). Successor to fitbit/sync.ts; runs in parallel until the Fitbit
-// Web API shutdown in 2026-09.
+// (append-only). Replaces the retired Fitbit Web API connector.
 //
 // Storage model:
-//   - The full Google Health dataPoint is stored verbatim as `data`. Unlike
-//     Fitbit (where we projected to a stable subset), Google's response is
-//     already structured/typed and faithful storage is more useful downstream.
+//   - The full Google Health dataPoint is stored verbatim as `data`. The
+//     response is already structured/typed, so faithful storage is the
+//     most useful shape downstream.
 //   - source_id strategy varies by entity — see per-entity functions. Three
 //     classes exist:
 //       (a) Entities with stable `name`: sleep, exercise → last URL segment

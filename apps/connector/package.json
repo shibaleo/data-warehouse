@@ -1,7 +1,7 @@
 {
   "name": "data-warehouse-connector",
   "version": "1.0.0",
-  "description": "GAS-based data connector for Data Warehouse (Toggl, Fitbit, Tanita → Neon PG)",
+  "description": "GAS-based data connector for Data Warehouse (Toggl, Google Health, Tanita, Zaim → Neon PG)",
   "scripts": {
     "push": "clasp push",
     "pull": "clasp pull",

@@ -25,7 +25,7 @@ function togglFullHistoricalSync(): void {
 
 // --- Daily sync (all services) ---
 
-/** Daily sync: Toggl masters + time entries + Fitbit all + Tanita all + Zaim all */
+/** Daily sync: Toggl masters + time entries + Tanita all + Zaim all */
 function dailySync(): void {
   log('=== Daily Sync Start ===');
   reportAndResetToggl402Counter();
@@ -39,7 +39,6 @@ function dailySync(): void {
     }
   }
   syncTimeEntries({ days: 3 });
-  syncFitbitAll(7);
   syncTanitaAll(30);
   syncZaimAll(30);
   log('=== Daily Sync Complete ===');
@@ -55,9 +54,9 @@ function reportAndResetToggl402Counter(): void {
 }
 
 /**
- * Google Health parallel-run sync (Fitbit successor; Fitbit Web API shutdown
- * 2026-09). Runs alongside dailySync() during the migration window so we can
- * diff raw_fitbit__* vs raw_google_health__* before cutover.
+ * Google Health daily sync (Fitbit successor). Fitbit ingestion was retired
+ * once raw_google_health__sleep was backfilled to 2020-06 and verified
+ * against raw_fitbit__* — see docs/004_bug_fix.md.
  */
 function dailySyncGoogleHealth(): void {
   log('=== Daily Sync (Google Health) Start ===');
@@ -102,15 +101,14 @@ function installTriggers(): void {
     .everyHours(1)
     .create();
 
-  // Daily sync at 12:00 PM JST: Toggl + Fitbit + Tanita + Zaim
+  // Daily sync at 12:00 PM JST: Toggl + Tanita + Zaim
   ScriptApp.newTrigger('dailySync')
     .timeBased()
     .everyDays(1)
     .atHour(12)
     .create();
 
-  // Google Health parallel-run sync at 1:00 PM JST (1h after dailySync so
-  // logs are easy to separate during the diff/validation period).
+  // Google Health daily sync at 1:00 PM JST (1h after dailySync).
   ScriptApp.newTrigger('dailySyncGoogleHealth')
     .timeBased()
     .everyDays(1)

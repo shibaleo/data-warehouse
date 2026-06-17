@@ -38,7 +38,10 @@ Concise rules for working in this repo. For background and roadmap see
 - 上流から消えた source_id は `deleted=true` の新 revision を append (UPDATE しない)
 - 「現在有効な行」は `<table>_current` view 経由で取得
 
-旧 `data_warehouse.raw_*` (UPSERT 時代) は凍結中、2026-05-15 以降に DROP 予定。
+旧 `data_warehouse.raw_*` (UPSERT 時代) は凍結中。`raw_fitbit__*` は両スキーマで
+完全 read-only に lock 済（migration 020、INSERT/UPDATE/DELETE/TRUNCATE 全ブロック）—
+Fitbit ingestion は廃止し、データは raw_google_health__* に移行済み（2020-06〜）。
+歴史的 archive として保持し、DROP しない。
 
 ## 時点指定スナップショット — `raw_at(tbl, T)`
 
