@@ -64,6 +64,15 @@ function dailySyncGoogleHealth(): void {
   log('=== Daily Sync (Google Health) Complete ===');
 }
 
+// --- Notion ---
+
+/** Notion strength sync: pulls the full TB__STRENGTH database (small). */
+function notionStrengthSync(): void {
+  log('=== Notion Strength Sync Start ===');
+  syncNotionStrength();
+  log('=== Notion Strength Sync Complete ===');
+}
+
 // --- Zaim ad-hoc ---
 
 /** Zaim full sync: all money records from 2020-01-01 + masters */

@@ -1,0 +1,11 @@
+version: 2
+
+sources:
+  - name: raw_notion
+    description: "Notion API raw responses (append-only base tables)"
+    schema: data_warehouse_v2
+    tables:
+      - name: raw_notion__strength
+        description: "Strength-log database (TB__STRENGTH) page rows — full revision history"
+      - name: raw_notion__orgasm
+        description: "TB__ORGASM event log — full revision history"
