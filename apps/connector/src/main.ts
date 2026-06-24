@@ -73,6 +73,19 @@ function notionStrengthSync(): void {
   log('=== Notion Strength Sync Complete ===');
 }
 
+/** Notion orgasm sync: pulls the full TB__ORGASM database (small). */
+function notionOrgasmSync(): void {
+  log('=== Notion Orgasm Sync Start ===');
+  syncNotionOrgasm();
+  log('=== Notion Orgasm Sync Complete ===');
+}
+
+/** All Notion DBs in one go — used by the hourly trigger. */
+function notionAllSync(): void {
+  notionStrengthSync();
+  notionOrgasmSync();
+}
+
 // --- Zaim ad-hoc ---
 
 /** Zaim full sync: all money records from 2020-01-01 + masters */
@@ -124,6 +137,12 @@ function installTriggers(): void {
     .atHour(13)
     .create();
 
+  // Notion DBs hourly: each is small enough to full-pull every hour.
+  ScriptApp.newTrigger('notionAllSync')
+    .timeBased()
+    .everyHours(1)
+    .create();
+
   // Toggl weekly historical sync on Monday at 3:00 AM JST
   ScriptApp.newTrigger('togglWeeklyHistoricalSync')
     .timeBased()
@@ -131,5 +150,5 @@ function installTriggers(): void {
     .atHour(3)
     .create();
 
-  log('Triggers installed: togglHourlySync, dailySync, dailySyncGoogleHealth, togglWeeklyHistoricalSync');
+  log('Triggers installed: togglHourlySync, dailySync, dailySyncGoogleHealth, notionAllSync, togglWeeklyHistoricalSync');
 }
