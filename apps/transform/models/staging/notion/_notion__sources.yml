@@ -9,3 +9,5 @@ sources:
         description: "Strength-log database (TB__STRENGTH) page rows — full revision history"
       - name: raw_notion__orgasm
         description: "TB__ORGASM event log — full revision history"
+      - name: raw_notion__running
+        description: "TB__RUNNING run/jog/walk log — full revision history"

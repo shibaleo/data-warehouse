@@ -80,10 +80,18 @@ function notionOrgasmSync(): void {
   log('=== Notion Orgasm Sync Complete ===');
 }
 
+/** Notion running sync: pulls the full TB__RUNNING database (small). */
+function notionRunningSync(): void {
+  log('=== Notion Running Sync Start ===');
+  syncNotionRunning();
+  log('=== Notion Running Sync Complete ===');
+}
+
 /** All Notion DBs in one go — used by the hourly trigger. */
 function notionAllSync(): void {
   notionStrengthSync();
   notionOrgasmSync();
+  notionRunningSync();
 }
 
 // --- Zaim ad-hoc ---
